@@ -1,0 +1,107 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio Streaming Example</title>
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <!--<script src="@grpc/grpc-js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/grpc-web/1.2.1/grpc-web.js"></script>
+  <!-- <script src="https://cdn.rawgit.com/grpc/grpc-web/v1.0.7/javascript/net/grpc-web/dist/grpc-web.js"></script>
+  <script src="your_module_path/audio_stream_pb.js"></script> <!-- replace with your actual module path -- >
+  <script src="your_module_path/audio_stream_grpc_web_pb.js"></script> <!-- replace with your actual module path -->
+  <button id="startRecording">Start</button>
+  <button id="stopRecording">Stop</button>
+</head>
+<body>
+
+<h1>Audio Streaming Example</h1>
+
+<audio muted id="audioPlayer" controls></audio>
+<button id="startStreamingButton">Start Streaming</button>
+
+<script type = "text/javascript" src="./dist/main.js"></script>
+
+<script>
+  const button = document.querySelector('button');
+
+  // Add an event listener to the button that listens for the click event
+  /*const audioStreamService = new AudioStreamClient("http://localhost:50051");
+  const audioPlayer = document.getElementById("audioPlayer");
+  const audioRequest = new AudioRequest();
+  const audioStream = audioStreamService.streamAudio(audioRequest);
+
+  audioStream.on("data", (response) => {
+    const audioData = response.getData();
+    playAudio(audioData);
+  });
+
+  audioStream.on("end", () => {
+    console.log("Audio streaming ended");
+  });
+
+  function playAudio(data) {
+    // Create a Blob from the audio data
+    const blob = new Blob([data], { type: "audio/wav" });
+
+    // Create a URL for the Blob
+    const audioUrl = URL.createObjectURL(blob);
+
+    // Set the audio source and play
+    audioPlayer.src = audioUrl;
+    audioPlayer.play();
+  }
+
+  $("#startStreamingButton").click(() => {
+    audioStream.write(audioRequest);
+  });*/
+
+  //const grpc = require("@grpc/grpc-js");
+  //const protoLoader = require("@grpc/proto-loader");
+  //const { Buffer } = require('node:buffer');
+  
+  /*const packageDefinition = protoLoader.loadSync("./proto/proto.proto", { keepCase: true, longs: String, enums: String, defaults: true, oneofs: true });
+  const proto = grpc.loadPackageDefinition(packageDefinition).proto;
+  
+  const client = new proto.SoundService("localhost:8080", grpc.credentials.createInsecure());
+  
+  const buf = Buffer.alloc(5, 'a');
+  
+  const request = { data: buf, rate: 1, ready_to_send: false};
+  
+  var call = client.GetSoundJustHello();
+  call.on('data', function(note) {
+      console.log('Got message ' + note.rate, note.data);
+      console.log(note.data.toString('ascii'));
+      playAudio(note.data)
+  });
+  
+  //call.on('end', callback); ???
+  
+  async function send(data) {
+      call.write(data);
+      call.end();
+  }
+  
+  send(request);
+
+
+  function playAudio(data) {
+        // Create a Blob from the audio data
+        const blob = new Blob([data], { type: "audio/wav" });
+    
+        // Create a URL for the Blob
+        const audioUrl = URL.createObjectURL(blob);
+    
+        // Set the audio source and play
+        audioPlayer.src = audioUrl;
+        audioPlayer.play();
+    }
+    $("#startStreamingButton").click(() => {
+        audioStream.write(audioRequest);
+    });*/
+</script>
+
+</body>
+</html>

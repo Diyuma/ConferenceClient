@@ -1,0 +1,99 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio Streaming Example</title>
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <!-- <script src="https://cdn.rawgit.com/grpc/grpc-web/v1.0.7/javascript/net/grpc-web/dist/grpc-web.js"></script>
+  <script src="your_module_path/audio_stream_pb.js"></script> <!-- replace with your actual module path -- >
+  <script src="your_module_path/audio_stream_grpc_web_pb.js"></script> <!-- replace with your actual module path -->
+</head>
+<body>
+
+<h1>Audio Streaming Example</h1>
+
+<audio id="audioPlayer" controls></audio>
+<button id="startStreamingButton">Start Streaming</button>
+
+<script>
+  /*const audioStreamService = new AudioStreamClient("http://localhost:50051");
+  const audioPlayer = document.getElementById("audioPlayer");
+  const audioRequest = new AudioRequest();
+  const audioStream = audioStreamService.streamAudio(audioRequest);
+
+  audioStream.on("data", (response) => {
+    const audioData = response.getData();
+    playAudio(audioData);
+  });
+
+  audioStream.on("end", () => {
+    console.log("Audio streaming ended");
+  });
+
+  function playAudio(data) {
+    // Create a Blob from the audio data
+    const blob = new Blob([data], { type: "audio/wav" });
+
+    // Create a URL for the Blob
+    const audioUrl = URL.createObjectURL(blob);
+
+    // Set the audio source and play
+    audioPlayer.src = audioUrl;
+    audioPlayer.play();
+  }
+
+  $("#startStreamingButton").click(() => {
+    audioStream.write(audioRequest);
+  });*/
+
+    const grpc = require("@grpc/grpc-js");
+    const protoLoader = require("@grpc/proto-loader");
+
+    const packageDefinition = protoLoader.loadSync("./proto/proto.proto", { keepCase: true, longs: String, enums: String, defaults: true, oneofs: true });
+    const example = grpc.loadPackageDefinition(packageDefinition).proto;
+
+    const client = new example.ExampleService("localhost:8080", grpc.credentials.createInsecure());
+
+    const request = { message: "World" };
+
+    var call = client.SendMessage();
+    call.on('data', function(note) {
+        console.log('Got message ' + note.reply);
+        //playAudio(note.reply);
+    });
+
+    //call.on('end', callback); ???
+
+    async function send(data) {
+        var notes = [data, data];
+        for (var i = 0; i < notes.length; i++) {
+            var note = notes[i];
+            console.log('Send message ' + note.message);
+            call.write(note);
+        }
+        call.end();
+    }
+
+    send(request);
+
+
+    function playAudio(data) {
+        // Create a Blob from the audio data
+        const blob = new Blob([data], { type: "audio/wav" });
+    
+        // Create a URL for the Blob
+        const audioUrl = URL.createObjectURL(blob);
+    
+        // Set the audio source and play
+        audioPlayer.src = audioUrl;
+        audioPlayer.play();
+    }
+    $("#startStreamingButton").click(() => {
+        audioStream.write(audioRequest);
+    });
+</script>
+
+</body>
+</html>
