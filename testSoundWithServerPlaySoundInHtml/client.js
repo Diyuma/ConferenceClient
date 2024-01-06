@@ -6,7 +6,7 @@ const {ChatServerMessage, ChatClientMessage, EmptyMessage} = require('./proto/pr
 const { SoundServiceClient } = require('./proto/proto_grpc_web_pb.js');
 
 
-var client = new SoundServiceClient('http://localhost:8085');
+var client = new SoundServiceClient('http://192.168.1.135:8085');
 
 /*var request = new ChatClientMessage();
 request.setData('Hello World!');
