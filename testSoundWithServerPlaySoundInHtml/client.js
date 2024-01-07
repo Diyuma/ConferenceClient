@@ -5,7 +5,7 @@ const { Buffer } = require('buffer');
 const {ChatServerMessage, ChatClientMessage, EmptyMessage} = require('./proto/proto_pb.js');
 const { SoundServiceClient } = require('./proto/proto_grpc_web_pb.js');
 
-console.log(ChatClientMessage)
+console.log(ChatClientMessage);
 var client = new SoundServiceClient('http://192.168.1.135:8085');
 
 /*var request = new ChatClientMessage();
