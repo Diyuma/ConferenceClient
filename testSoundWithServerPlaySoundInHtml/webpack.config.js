@@ -12,5 +12,13 @@ module.exports = {
         "crypto": false,
         "crypto-browserify": require.resolve('crypto-browserify')
         }
-    }
-}
+    },
+    output: {
+        chunkFormat: "module",
+        scriptType: "module",
+        module: true,
+    },
+    experiments: {
+        outputModule: true,
+    },
+};
