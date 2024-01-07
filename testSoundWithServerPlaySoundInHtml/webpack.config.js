@@ -1,4 +1,5 @@
 module.exports = {
+    entry: ['./proto/proto_grpc_web_pb.js', './proto/proto_pb.js'],
     resolve: {
         fallback: {
         "fs": false,
