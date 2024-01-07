@@ -5,8 +5,8 @@ const { Buffer } = require('buffer');
 const {ChatServerMessage, ChatClientMessage, EmptyMessage} = __non_webpack_require__('https://cdn.jsdelivr.net/gh/Diyuma/ConferenceClient@main/testSoundWithServerPlaySoundInHtml/proto/proto_pb.js');
 const { SoundServiceClient } = __non_webpack_require__('https://cdn.jsdelivr.net/gh/Diyuma/ConferenceClient@main/testSoundWithServerPlaySoundInHtml/proto/proto_grpc_web_pb.js');
 
-
-var client = new SoundServiceClient('http://192.168.1.135:8085');
+console.log(ChatClientMessage)
+var client = new SoundServiceClient('http://localhost:8085');
 
 /*var request = new ChatClientMessage();
 request.setData('Hello World!');
@@ -63,7 +63,7 @@ audioPlayer.addEventListener("ended", (event) => {
     }
 });
 
-export function doRequest() {
+function doRequest() {
     var request = new ChatClientMessage();
 
     const buf = Buffer.alloc(5, 'a');
