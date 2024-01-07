@@ -2,8 +2,8 @@ const protoLoader = require("@grpc/proto-loader");
 const grpc = require("grpc-web");
 const { Buffer } = require('buffer');
 
-const {ChatServerMessage, ChatClientMessage, EmptyMessage} = __non_webpack_require__('https://cdn.jsdelivr.net/gh/Diyuma/ConferenceClient@main/testSoundWithServerPlaySoundInHtml/proto/proto_pb.js');
-const { SoundServiceClient } = __non_webpack_require__('https://cdn.jsdelivr.net/gh/Diyuma/ConferenceClient@main/testSoundWithServerPlaySoundInHtml/proto/proto_grpc_web_pb.js');
+const {ChatServerMessage, ChatClientMessage, EmptyMessage} = require('https://cdn.jsdelivr.net/gh/Diyuma/ConferenceClient@main/testSoundWithServerPlaySoundInHtml/proto/proto_pb.js');
+const { SoundServiceClient } = require('https://cdn.jsdelivr.net/gh/Diyuma/ConferenceClient@main/testSoundWithServerPlaySoundInHtml/proto/proto_grpc_web_pb.js');
 
 console.log(ChatClientMessage)
 var client = new SoundServiceClient('http://localhost:8085');
