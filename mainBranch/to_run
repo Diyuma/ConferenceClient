@@ -16,8 +16,8 @@ npx webpack ./client.js
 
 envoy -c envoy-override.yaml
 
-docker pull lehatr/test_grpc_server:latest
-docker run --publish 9090:8080 -t lehatr/test_grpc_server
+docker pull lehatr/test_grpc_server:version2.0
+docker run --publish 9090:8080 -t lehatr/test_grpc_server:version2.0
 
 REM evans --proto proto/proto.proto --port 9090
 

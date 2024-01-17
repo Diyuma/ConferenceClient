@@ -8,10 +8,11 @@ import { connect } from 'extendable-media-recorder-wav-encoder';
 
 await register(await connect());
 
-const {ChatServerMessage, ChatClientMessage, EmptyMessage} = require('./proto/proto_pb.js');
+const { ChatServerMessage, ChatClientMessage, ClientResponseMessage, ClientInfoMessage, ClientUserInitResponseMessage, ClientConfInitResponseMessage, EmptyMessage } = require('./proto/proto_pb.js');
 const { SoundServiceClient } = require('./proto/proto_grpc_web_pb.js');
 
 var client = new SoundServiceClient('http://0.0.0.0:8085');
+var NOT_TESTING = false;
 
 // SOUND PLAYER FUNCS
 var audioDeque = new Deque();
@@ -29,12 +30,12 @@ function initSoundPlayer() {
         audioCtx = new AudioContext();
         let channels = 1;
 
-        const frameCount = 10000 * 100;
+        const frameCount = 8192 * 100;
 
         buffer = new AudioBuffer({
             numberOfChannels: channels,
             length: frameCount,
-            sampleRate: 10000,
+            sampleRate: 8192,
         });
     }
 
@@ -45,11 +46,19 @@ function initSoundPlayer() {
         if (audioDeque.length != 0) {
             let toAdd = audioDeque.shift();
             const nowBuffering = buffer.getChannelData(0);
-            for (let i = 0; i < toAdd.length; i++) {
-                nowBuffering[i + LastBufferIndex] = toAdd[i];
+            console.log(toAdd);
+            if (mySound.has(toAdd[2]) && NOT_TESTING) {
+                let toDecrim = mySound.get(toAdd[2]);
+                for (let i = 0; i < toAdd[0].length; i++) {
+                    nowBuffering[i + LastBufferIndex] = toAdd[0][i] - toDecrim[i];
+                }
+            } else {
+                for (let i = 0; i < toAdd[0].length; i++) {
+                    nowBuffering[i + LastBufferIndex] = toAdd[0][i];
+                }
             }
     
-            LastBufferIndex += toAdd.length;
+            LastBufferIndex += toAdd[0].length;
     
             readyAmt += 1
     
@@ -69,46 +78,95 @@ function initSoundPlayer() {
     waitForAudio();
 }
 
-initSoundPlayer();
-
 
 // CLIENT-SERVER FUNCS
-async function serverBytesWavDataToWaveArray(serverData) {
+var userId = null, confId = null;
+let mySound = new Map();
+
+async function serverBytesWavDataToWaveArray(serverData, bitRate) {
     let blobData =  new Blob(serverData, { type: "audio/wav" });
     let arrayBuf = await blobData.arrayBuffer();
-    let audioCtx = new AudioContext({sampleRate: 10000});
+    let audioCtx = new AudioContext({sampleRate: bitRate});
     let decodedData = await audioCtx.decodeAudioData(arrayBuf);
 
     return decodedData.getChannelData(0); 
 }
 
-async function getSound() {
-    var stream = client.getSound(new EmptyMessage(), {"Access-Control-Allow-Origin": "*"});
+async function getSound(confId, userId) {
+    var msg = new ClientInfoMessage();
+    msg.setConfid(confId);
+    msg.setUserid(userId);
+
+    var stream = client.getSound(msg, {"Access-Control-Allow-Origin": "*"});
     stream.on('data', function(response) {
-        audioDeque.push(response.getDataList());
+        console.log(response.getDataList(), response.getRate(), response.getSoundid());
+        audioDeque.push([response.getDataList(), response.getRate(), response.getSoundid()]);
     });
 }
 
 async function sendSound(request) {
-    client.sendSound(request, {"Access-Control-Allow-Origin": "*"}, (error, _) => {
+    client.sendSound(request, {"Access-Control-Allow-Origin": "*"}, (error, response) => {
+        mySound.set(response.getSoundid(), request.getDataList());
+
+        nextRecorderBitRate = response.getRate();
+        nextBitRateInd = 0;
+        for (let i = startBitRate; i < nextRecorderBitRate; i*=2) {
+            nextBitRateInd++;
+        }
+        
         if (error) {
             console.error("Error:", error);
         }
     });
 }
 
-async function sendAudioBlobDataToServer(blob) {
+async function sendAudioBlobDataToServer(blob, bitRate) {
     var request = new ChatClientMessage();
-    request.setRate(10000);
-    request.setReadyToSend(true);
-    request.setDataList(await serverBytesWavDataToWaveArray(blob));
+    request.setRate(bitRate);
+    //request.setReadyToSend(true); deprecated
+    request.setDataList(await serverBytesWavDataToWaveArray(blob, bitRate));
+    console.log("###", request.getDataList());
+
+    request.setUserid(userId);
+    request.setConfid(confId);
 
     sendSound(request);
 }
 
+async function initNewClient() {
+    client.initUser(new EmptyMessage(), {"Access-Control-Allow-Origin": "*"}, (error, response) => {
+        console.log(response);
+        userId = response.getUserid();
+
+        if (error) {
+            console.error("Error:", error);
+        }
+    });
+}
+
+async function initNewConf() {
+    client.initConf(new EmptyMessage(), {"Access-Control-Allow-Origin": "*"}, (error, response) => {
+        console.log(response);
+        confId = response.getConfid();
+        console.log(confId);
+
+        if (error) {
+            console.error("Error:", error);
+        }
+    });
+}
+
+
+
 let soundDuration = 500; // 250 - minimum 500 - ok баланс между зарежкой и качеством
 
 //RECORDER FUNCS
+var curRecorderBitRate = 8192;
+var curBitRateInd = 1;
+var nextRecorderBitRate = 8192;
+var nextBitRateInd = 1;
+var startBitRate = 4096;
+var maxBitRate = 32768;
 document.getElementById("startRecording").addEventListener("click", initRecorder);
 function initRecorder() {
     async function getUserMedia(constraints) {
@@ -140,16 +198,29 @@ function initRecorder() {
     let recordedChunks = [[], []];
     let isRecorderStopped = [true, true];
     let HaveToStop = false;
+    var recorderState = []; // array with 2 pairs (chunkInd, BitRate) not to loose recorder state info in ondatavaliable func
+    var recorderStateInd = 0;
+
+    recorderState[0] = [0, curRecorderBitRate];
     function handleMicrophoneOn(stream) {
-        let recorders = [newAudioStreamWithRate(stream, 10000), newAudioStreamWithRate(stream, 10000)];
+        let recorders = [];
+        for (let bitRate = startBitRate; bitRate <= maxBitRate; bitRate *= 2) {
+            recorders.push([newAudioStreamWithRate(stream, bitRate), newAudioStreamWithRate(stream, bitRate)]);
+        }
+        
         isRecorderStopped[0] = false;
 
         async function runRecorder(chunkInd) {
-            recorders[chunkInd].ondataavailable = e => {
-                recordedChunks[chunkInd].push(e.data);
-                if (isRecorderStopped[chunkInd]) {
-                    sendAudioBlobDataToServer(recordedChunks[chunkInd]);
-                    recordedChunks[chunkInd] = [];
+            recorders[curBitRateInd][chunkInd].ondataavailable = e => {
+                var chunkIndNow = recorderState[recorderStateInd][0];
+                var bitRateNow = recorderState[recorderStateInd][1];
+                recordedChunks[chunkIndNow].push(e.data);
+
+                if (isRecorderStopped[chunkIndNow]) {
+                    sendAudioBlobDataToServer(recordedChunks[chunkIndNow], bitRateNow);
+                    recordedChunks[chunkIndNow] = [];
+
+                    recorderStateInd^=1; // we believe that there won't be any data after stop
                 }
             };
 
@@ -163,9 +234,14 @@ function initRecorder() {
             isRecorderStopped[chunkInd] = false;
             isRecorderStopped[chunkInd^1] = true;
 
-            recorders[chunkInd].start();
-            recorders[chunkInd^1].stop();
+            recorderState[recorderStateInd^1] = [chunkInd, nextRecorderBitRate];
+            
+            recorders[nextBitRateInd][chunkInd].start();
+            recorders[curBitRateInd][chunkInd^1].stop();
+            curRecorderBitRate = nextRecorderBitRate;
+            curBitRateInd = nextBitRateInd;
         }
+        
 
         runRecorder(0);
     }
@@ -187,6 +263,12 @@ function initRecorder() {
     });
 }
 
-$("#startStreamingButton").click(() => {
-    getSound()
+$("#StartConferenceButton").click(() => {
+    initNewConf();
+});
+
+$("#ConnectToConferenceButton").click(() => {
+    initNewClient();
+    initSoundPlayer();
+    getSound(document.getElementById("ConferenceId").value)
 });
