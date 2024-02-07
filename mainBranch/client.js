@@ -15,7 +15,7 @@ var client = new SoundServiceClient('http://0.0.0.0:8085');
 var NOT_TESTING = false;
 
 // SOUND PLAYER FUNCS
-var audioDeque = new Deque();
+var audioDeque = new Deque(); // each element is [data, bitRate, soundId] (soundId to understand if it client sound or someone else)
 
 // I don't know why, but I need it , it makes sound better without using it:)
 let crossFade = 10;
@@ -23,58 +23,207 @@ const { Gapless5 } = require('@regosen/gapless-5');
 const player = new Gapless5({ guiId: 'gapless5-player-id', loadLimit: 500, exclusive: true, crossfade: crossFade});
 // end of non-understandable part
 
+
+
+
+
+
+
+let TO_RECORD = false;
+
+function saveFloat32ArrayAsText(float32Array, filename) {
+    const textArray = Array.from(float32Array, value => value.toString());
+  
+    const textContent = textArray.join('\n');
+  
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+  
+    const downloadLink = document.createElement('a');
+    downloadLink.href = URL.createObjectURL(blob);
+    downloadLink.download = filename || 'data.txt';
+  
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+  }
+
+
+
+
+
 function initSoundPlayer() {
-    let audioCtx;
-    let buffer;
-    function prepareSoundPlayer() {
-        audioCtx = new AudioContext();
-        let channels = 1;
-
-        const frameCount = 8192 * 100;
-
-        buffer = new AudioBuffer({
-            numberOfChannels: channels,
-            length: frameCount,
-            sampleRate: 8192,
-        });
-    }
-
     let readyAmt = 0;
     let LastBufferIndex = 0;
+    let lastWaveValues = [];
+    let soundLen = 20; // in seconds
+    let safeLen = 1;
+    let lastsr = -100;
+
+    //let audioCtxs = [[], []];
+    let buffers = [null, null, null, null, null];
+    let nowPlayingInd = 0;
+    let nowWritingInd = 0;
+
+    let audioCtxs = [new AudioContext(), new AudioContext()];
+    let sources = [audioCtxs[0].createBufferSource(), audioCtxs[1].createBufferSource()];
+    let playingRates = [4096 * 2, 4096 * 2, 4096 * 2, 4096 * 2, 4096 * 2];
+    sources[0].connect(audioCtxs[0].destination);
+
+    buffers[0] = prepareSoundPlayer(4096 * 2);
+
+    sources[0].buffer = buffers[0];
+
+    function prepareSoundPlayer(bitRate) {
+        let channels = 1;
+
+        const frameCount = bitRate * (soundLen + safeLen);
+
+        let buffer = new AudioBuffer({
+            numberOfChannels: channels,
+            length: frameCount,
+            sampleRate: bitRate,
+        });
+
+        return buffer;
+    }
+
+    async function startPlayingAndPrepareNext(nextPlayingInd) {
+        sources[nextPlayingInd^1].start();
+        audioCtxs[nextPlayingInd] = new AudioContext();
+        sources[nextPlayingInd] = audioCtxs[nextPlayingInd].createBufferSource();
+        setTimeout(() => startPlayingAndPrepareNext(nextPlayingInd^1), soundLen * 1000);
+
+        sources[nextPlayingInd].connect(audioCtxs[nextPlayingInd].destination);
+        nowPlayingInd = (nowPlayingInd + 1) % buffers.length;
+        if (buffers[nowPlayingInd] == null) {
+            buffers[nowPlayingInd] = prepareSoundPlayer(4096 * 2);
+        }
+        sources[nextPlayingInd].buffer = buffers[nowPlayingInd];
+
+        buffers[(nowPlayingInd - 2 + buffers.length) % buffers.length] = null;
+    } 
 
     async function waitForAudio() { // we do not need such timeouts, later may make them larger
+    
         if (audioDeque.length != 0) {
             let toAdd = audioDeque.shift();
-            const nowBuffering = buffer.getChannelData(0);
-            console.log(toAdd);
+            let bitRateInd = getBitRateInd(toAdd[1]);
+
+            const nowBuffering = buffers[nowWritingInd].getChannelData(0);
             if (mySound.has(toAdd[2]) && NOT_TESTING) {
                 let toDecrim = mySound.get(toAdd[2]);
                 for (let i = 0; i < toAdd[0].length; i++) {
                     nowBuffering[i + LastBufferIndex] = toAdd[0][i] - toDecrim[i];
                 }
             } else {
-                for (let i = 0; i < toAdd[0].length; i++) {
-                    nowBuffering[i + LastBufferIndex] = toAdd[0][i];
+                if (lastsr != -100) {
+                    for (let i = 0; i < 100; i++) {
+                        //nowBuffering[i + LastBufferIndex] = (lastsr * (100 - i) / 100.0 + toAdd[0][i] * (i + 1) / 100);
+                        nowBuffering[i + LastBufferIndex] = (lastsr * (100 - i) / 100.0 + toAdd[0][i])  / 2.0;
+                    }
+
+                    for (let i = 100; i < toAdd[0].length; i++) {
+                        nowBuffering[i + LastBufferIndex] = toAdd[0][i];
+                    }
+                } else {
+                    for (let i = 0; i < toAdd[0].length; i++) {
+                        nowBuffering[i + LastBufferIndex] = toAdd[0][i];
+                    }
+                }
+
+                lastsr = 0;
+                for (let i = 0; i < 100; i++) {
+                    lastsr += (toAdd[0][toAdd[0].length - 1 - i] * (100 - i) / 100.0) / 100.0;
                 }
             }
     
             LastBufferIndex += toAdd[0].length;
-    
-            readyAmt += 1
-    
-            if (readyAmt == 5) {
-                const source = audioCtx.createBufferSource();
-                source.buffer = buffer;
-                source.connect(audioCtx.destination);
-                source.start();
+            if (LastBufferIndex >= soundLen * playingRates[nowWritingInd]) {
+                if (TO_RECORD) {
+                    console.log("Care, only recording to file");
+                      saveFloat32ArrayAsText(nowBuffering, 'data.txt');
+                }
+
+                LastBufferIndex = 0;
+                nowWritingInd = (nowWritingInd + 1) % buffers.length;
+                if (buffers[nowWritingInd] == null) {
+                    buffers[nowWritingInd] = prepareSoundPlayer(4096 * 2);
+                }
             }
+    
+            readyAmt += 1;
+
+            if (readyAmt == 5) { // 4 not 5 because first floats will be 0
+                if (!TO_RECORD) {
+                    startPlayingAndPrepareNext(1);
+                }
+                //const source = audioCtx.createBufferSource();
+                //source.connect(audioCtx.destination);
+
+                    /*buffers[nowPlayingInd^1][1] = prepareSoundPlayer(4096 * 2);
+                    audioCtxs[nowPlayingInd^1] = new AudioContext();
+
+                    sources[nowPlayingInd^1] = audioCtxs[nowPlayingInd^1].createBufferSource();
+
+                    sources[nowPlayingInd^1].connect(audioCtxs[nowPlayingInd^1].destination);
+                    sources[nowPlayingInd^1].buffer = buffers[nowPlayingInd^1][1];*/
+            }
+            /*if (readyAmt > 4 && readyAmt % 20 == 5 || readyAmt % 20 == 0) { // 4 not 5 because first floats will be 0
+                let ind = 0;
+                
+                //const source = audioCtx.createBufferSource();
+                //source.connect(audioCtx.destination);
+                if (readyAmt % 20 == 5) {
+                    sources[nowPlayingInd].start();
+
+
+
+
+                    buffers[nowPlayingInd^1][1] = prepareSoundPlayer(4096 * 2);
+                    audioCtxs[nowPlayingInd^1] = new AudioContext();
+
+                    sources[nowPlayingInd^1] = audioCtxs[nowPlayingInd^1].createBufferSource();
+
+                    sources[nowPlayingInd^1].connect(audioCtxs[nowPlayingInd^1].destination);
+                    sources[nowPlayingInd^1].buffer = buffers[nowPlayingInd^1][1];
+                } else {
+                    LastBufferIndex = 0;
+                    nowPlayingInd ^= 1;
+
+                    buffers[nowPlayingInd][1] = prepareSoundPlayer(4096 * 2);
+                    audioCtxs[nowPlayingInd] = new AudioContext();
+
+                    sources[nowPlayingInd] = audioCtxs[nowPlayingInd].createBufferSource();
+
+                    sources[nowPlayingInd].connect(audioCtxs[nowPlayingInd].destination);
+                    sources[nowPlayingInd].buffer = buffers[nowPlayingInd][1];
+
+                    //sources[nowPlayingInd].start();
+                }
+                /*for (let i = startBitRate; i <= maxBitRate; i *= 2) {
+                    /*[audioCtxs[nowPlayingInd][ind], buffers[nowPlayingInd][ind]] = prepareSoundPlayer(i);
+                    const source = audioCtxs[nowPlayingInd][ind].createBufferSource();
+                    source.buffer = buffers[nowPlayingInd][ind];
+                    source.connect(audioCtxs[nowPlayingInd][ind].destination);
+                    source.start();
+
+                    ind++;
+                }* /
+            }*/
             setTimeout(() => waitForAudio(), 50);
         } else {
             setTimeout(() => waitForAudio(), 100);
         }
     }
 
-    prepareSoundPlayer()
+    /*let ind = 0;
+    for (let i = startBitRate; i <= maxBitRate; i *= 2) {
+        for (let j = 0; j < 2; j++) {
+            buffers[j][ind] = prepareSoundPlayer(i);
+        }
+        ind++;
+    }*/
+    //console.log("*", buffers);
     waitForAudio();
 }
 
@@ -99,9 +248,17 @@ async function getSound(confId, userId) {
 
     var stream = client.getSound(msg, {"Access-Control-Allow-Origin": "*"});
     stream.on('data', function(response) {
-        console.log(response.getDataList(), response.getRate(), response.getSoundid());
+        //(response.getDataList(), response.getRate(), response.getSoundid());
         audioDeque.push([response.getDataList(), response.getRate(), response.getSoundid()]);
     });
+}
+
+function getBitRateInd(bitRate) {
+    var ind = 0;
+    for (let i = startBitRate; i < bitRate; i *= 2) {
+        ind++;
+    }
+    return ind;
 }
 
 async function sendSound(request) {
@@ -109,10 +266,7 @@ async function sendSound(request) {
         mySound.set(response.getSoundid(), request.getDataList());
 
         nextRecorderBitRate = response.getRate();
-        nextBitRateInd = 0;
-        for (let i = startBitRate; i < nextRecorderBitRate; i*=2) {
-            nextBitRateInd++;
-        }
+        nextBitRateInd = getBitRateInd(nextRecorderBitRate);
         
         if (error) {
             console.error("Error:", error);
@@ -123,9 +277,7 @@ async function sendSound(request) {
 async function sendAudioBlobDataToServer(blob, bitRate) {
     var request = new ChatClientMessage();
     request.setRate(bitRate);
-    //request.setReadyToSend(true); deprecated
     request.setDataList(await serverBytesWavDataToWaveArray(blob, bitRate));
-    console.log("###", request.getDataList());
 
     request.setUserid(userId);
     request.setConfid(confId);
@@ -135,7 +287,6 @@ async function sendAudioBlobDataToServer(blob, bitRate) {
 
 async function initNewClient() {
     client.initUser(new EmptyMessage(), {"Access-Control-Allow-Origin": "*"}, (error, response) => {
-        console.log(response);
         userId = response.getUserid();
 
         if (error) {
@@ -146,9 +297,7 @@ async function initNewClient() {
 
 async function initNewConf() {
     client.initConf(new EmptyMessage(), {"Access-Control-Allow-Origin": "*"}, (error, response) => {
-        console.log(response);
         confId = response.getConfid();
-        console.log(confId);
 
         if (error) {
             console.error("Error:", error);

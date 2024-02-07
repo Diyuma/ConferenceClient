@@ -8,26 +8,14 @@
   <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
   <!--<script src="@grpc/grpc-js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/grpc-web/1.2.1/grpc-web.js"></script>
-  <!-- <script src="https://cdn.rawgit.com/grpc/grpc-web/v1.0.7/javascript/net/grpc-web/dist/grpc-web.js"></script>
-  <script src="your_module_path/audio_stream_pb.js"></script> <!-- replace with your actual module path -- >
-  <script src="your_module_path/audio_stream_grpc_web_pb.js"></script> <!-- replace with your actual module path -->
+  <script src="https://cdn.rawgit.com/grpc/grpc-web/v1.0.7/javascript/net/grpc-web/dist/grpc-web.js"></script>-->
+
   <button id="startRecording">Start</button>
   <button id="stopRecording">Stop</button>
 </head>
 <body>
 
 <h1>Audio Streaming Example</h1>
-
-<form>
-  <input type="file" id="my-file-input" multiple="multiple" accept="audio/*">
-</form>
-
-
-<a download="file1.wav" href='#' id="link1"></a>
-<a download="file2.wav" href='#' id="link2"></a>
-<a download="file3.wav" href='#' id="link3"></a>
-<a download="file4.wav" href='#' id="link4"></a>
-<a download="file5.wav" href='#' id="link5"></a>
 
 <audio muted id="audioPlayer1" controls></audio>
 <audio muted id="audioPlayer2" controls></audio>
@@ -43,8 +31,15 @@
 <div id="audioContainer"></div>
 
 <!--<script type = "text/javascript" src="https://cdn.jsdelivr.net/gh/Diyuma/ConferenceClient@latest/testSoundWithServerPlaySoundInHtml/dist/main.js"></script>-->
-
 <script type = "text/javascript" src="./dist/main.js"></script>
 
 </body>
+
+
+<form onsubmit="download(this['name'].value, this['text'].value)">
+  <input type="text" name="name" value="test.txt">
+  <textarea name="text"></textarea>
+  <input type="submit" value="Download">
+</form>
+
 </html>
