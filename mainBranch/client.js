@@ -13,6 +13,7 @@ const { SoundServiceClient } = require('./proto/proto_grpc_web_pb.js');
 
 var client = new SoundServiceClient('http://0.0.0.0:8085');
 var NOT_TESTING = false;
+var DEEBUGGING_SET_CONF_ID_FIXED = true
 
 // SOUND PLAYER FUNCS
 var audioDeque = new Deque(); // each element is [data, bitRate, soundId] (soundId to understand if it client sound or someone else)
@@ -289,10 +290,12 @@ async function sendAudioBlobDataToServer(blob, bitRate) {
             request.setDataList(dataToSend);
             request.setUserid(userId);
             request.setConfid(confId);
+            request.setTimestamp(Date.now());
+            request.setMessageind(i / step - 1);
 
-            for (let j = 0; j < 100; j++) { // remove it !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                sendSound(request);
-            }
+            //for (let j = 0; j < 100; j++) { // remove it !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            sendSound(request);
+            //}
         }
 
         sendRequest(TO_SEND.slice(i - step, i));
@@ -301,13 +304,15 @@ async function sendAudioBlobDataToServer(blob, bitRate) {
     TO_SEND = TO_SEND.slice(lastRightIndex, TO_SEND.length);
 }
 
-async function initNewClient() {
+async function initNewClient(confId) {
     client.initUser(new EmptyMessage(), {"Access-Control-Allow-Origin": "*"}, (error, response) => {
         userId = response.getUserid();
 
         if (error) {
             console.error("Error:", error);
+            return
         }
+        getSound(confId, userId)
     });
 }
 
@@ -433,7 +438,13 @@ $("#StartConferenceButton").click(() => {
 });
 
 $("#ConnectToConferenceButton").click(() => {
-    initNewClient();
+    if (DEEBUGGING_SET_CONF_ID_FIXED) {
+        if (confId == 0) {
+            console.log("Conference id is 0 now");
+        }
+        initNewClient(confId);
+    } else {
+        initNewClient(document.getElementById("ConferenceId").value);
+    }
     initSoundPlayer();
-    getSound(document.getElementById("ConferenceId").value)
 });

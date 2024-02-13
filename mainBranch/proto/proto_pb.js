@@ -429,7 +429,9 @@ proto.proto.ChatClientMessage.toObject = function(includeInstance, msg) {
     dataList: (f = jspb.Message.getRepeatedFloatingPointField(msg, 4)) == null ? undefined : f,
     rate: jspb.Message.getFieldWithDefault(msg, 2, 0),
     userid: jspb.Message.getFieldWithDefault(msg, 6, 0),
-    confid: jspb.Message.getFieldWithDefault(msg, 7, 0)
+    confid: jspb.Message.getFieldWithDefault(msg, 7, 0),
+    timestamp: jspb.Message.getFieldWithDefault(msg, 8, 0),
+    messageind: jspb.Message.getFieldWithDefault(msg, 9, 0)
   };
 
   if (includeInstance) {
@@ -483,6 +485,14 @@ proto.proto.ChatClientMessage.deserializeBinaryFromReader = function(msg, reader
     case 7:
       var value = /** @type {number} */ (reader.readUint64());
       msg.setConfid(value);
+      break;
+    case 8:
+      var value = /** @type {number} */ (reader.readUint64());
+      msg.setTimestamp(value);
+      break;
+    case 9:
+      var value = /** @type {number} */ (reader.readUint32());
+      msg.setMessageind(value);
       break;
     default:
       reader.skipField();
@@ -538,6 +548,20 @@ proto.proto.ChatClientMessage.serializeBinaryToWriter = function(message, writer
   if (f !== 0) {
     writer.writeUint64(
       7,
+      f
+    );
+  }
+  f = message.getTimestamp();
+  if (f !== 0) {
+    writer.writeUint64(
+      8,
+      f
+    );
+  }
+  f = message.getMessageind();
+  if (f !== 0) {
+    writer.writeUint32(
+      9,
       f
     );
   }
@@ -632,6 +656,42 @@ proto.proto.ChatClientMessage.prototype.getConfid = function() {
  */
 proto.proto.ChatClientMessage.prototype.setConfid = function(value) {
   return jspb.Message.setProto3IntField(this, 7, value);
+};
+
+
+/**
+ * optional uint64 timeStamp = 8;
+ * @return {number}
+ */
+proto.proto.ChatClientMessage.prototype.getTimestamp = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 8, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.proto.ChatClientMessage} returns this
+ */
+proto.proto.ChatClientMessage.prototype.setTimestamp = function(value) {
+  return jspb.Message.setProto3IntField(this, 8, value);
+};
+
+
+/**
+ * optional uint32 messageInd = 9;
+ * @return {number}
+ */
+proto.proto.ChatClientMessage.prototype.getMessageind = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 9, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.proto.ChatClientMessage} returns this
+ */
+proto.proto.ChatClientMessage.prototype.setMessageind = function(value) {
+  return jspb.Message.setProto3IntField(this, 9, value);
 };
 
 
