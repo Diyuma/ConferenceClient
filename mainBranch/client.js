@@ -277,6 +277,7 @@ async function sendSound(request) {
 
 let TO_SEND = []; // TODO change variable name
 let GRAIN_SERVER_DURATION = 256; // TODO GET THAT PARAM FROM SERVER!!!!!!!!!!! // in ms
+let SendMessageIndex = 0;
 
 async function sendAudioBlobDataToServer(blob, bitRate) {
     TO_SEND.push(...(await serverBytesWavDataToWaveArray(blob, bitRate)));
@@ -284,21 +285,22 @@ async function sendAudioBlobDataToServer(blob, bitRate) {
     let step = (GRAIN_SERVER_DURATION * bitRate) / 1024; // / 1024 because sd in ms but we don't really need seconds
     let lastRightIndex = 0;
     for (let i = step; i <= TO_SEND.length; i += step) {
-        async function sendRequest(dataToSend) {
+        async function sendRequest(dataToSend, dataId) {
             var request = new ChatClientMessage();
             request.setRate(bitRate);
             request.setDataList(dataToSend);
             request.setUserid(userId);
             request.setConfid(confId);
             request.setTimestamp(Date.now());
-            request.setMessageind(i / step - 1);
+            request.setMessageind(dataId);
 
             //for (let j = 0; j < 100; j++) { // remove it !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             sendSound(request);
             //}
         }
 
-        sendRequest(TO_SEND.slice(i - step, i));
+        sendRequest(TO_SEND.slice(i - step, i), SendMessageIndex);
+        SendMessageIndex += 1;
         lastRightIndex = i;
     }
     TO_SEND = TO_SEND.slice(lastRightIndex, TO_SEND.length);
@@ -412,7 +414,7 @@ function initRecorder() {
             curBitRateInd = nextBitRateInd;
         }
         
-
+        SendMessageIndex = 0;
         runRecorder(0);
     }
 

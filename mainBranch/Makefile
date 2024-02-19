@@ -26,7 +26,7 @@ startTestGoServer:
 startEvans:
 	evans --proto proto/proto.proto --port 8080
 
-startEnvoy:
+runEnvoy:
 	envoy -c envoy-override.yaml
 
 buildFront:
