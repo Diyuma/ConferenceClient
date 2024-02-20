@@ -11,7 +11,7 @@ await register(await connect());
 const { ChatServerMessage, ChatClientMessage, ClientResponseMessage, ClientInfoMessage, ClientUserInitResponseMessage, ClientConfInitResponseMessage, EmptyMessage } = require('./proto/proto_pb.js');
 const { SoundServiceClient } = require('./proto/proto_grpc_web_pb.js');
 
-var client = new SoundServiceClient('http://0.0.0.0:8085');
+var client = new SoundServiceClient('http://178.154.202.56:8085');
 var NOT_TESTING = false;
 var DEEBUGGING_SET_CONF_ID_FIXED = true
 
