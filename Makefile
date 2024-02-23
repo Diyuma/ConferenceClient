@@ -31,7 +31,16 @@ runEnvoy:
 
 buildFront:
 	npm install
-	npx webpack ./client.js
+	npx webpack ./html/client.js
+
+buildFrontServer:
+	npm install
+	npx webpack ./html/client.js
+
+	scp -i ~/.ssh/yconference html/dist/main.js html/index.html lehatr@178.154.202.56:~
+	ssh -i ~/.ssh/yconference lehatr@178.154.202.56 sudo mv main.js "~/conference/html/conference/main.js"
+	ssh -i ~/.ssh/yconference lehatr@178.154.202.56 sudo mv index.html "~/conference/html/conference/index.html"
+
 
 buildAndRunAllSound: buildFront buildProtos startEnvoy startTestGoServer
 

@@ -1,5 +1,11 @@
+const path = require('path');
+
 module.exports = {
     entry: ['./proto/proto_grpc_web_pb.js', './proto/proto_pb.js'],
+    output: {
+    filename: 'main.js',
+        path: path.resolve(__dirname, 'html/dist'),
+    },
     resolve: {
         fallback: {
         "fs": false,
@@ -14,12 +20,4 @@ module.exports = {
         "crypto-browserify": require.resolve('crypto-browserify')
         }
     },
-    /*output: {
-        chunkFormat: "module",
-        scriptType: "module",
-        module: true,
-    },
-    experiments: {
-        outputModule: true,
-    },*/
 };

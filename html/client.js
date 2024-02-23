@@ -8,8 +8,8 @@ import { connect } from 'extendable-media-recorder-wav-encoder';
 
 await register(await connect());
 
-const { ChatServerMessage, ChatClientMessage, ClientResponseMessage, ClientInfoMessage, ClientUserInitResponseMessage, ClientConfInitResponseMessage, EmptyMessage } = require('./proto/proto_pb.js');
-const { SoundServiceClient } = require('./proto/proto_grpc_web_pb.js');
+const { ChatServerMessage, ChatClientMessage, ClientResponseMessage, ClientInfoMessage, ClientUserInitResponseMessage, ClientConfInitResponseMessage, EmptyMessage } = require('../proto/proto_pb.js');
+const { SoundServiceClient } = require('../proto/proto_grpc_web_pb.js');
 
 var client = new SoundServiceClient('https://diyumaconference.ru/'); //https://diyumaconference.ru/   http://178.154.202.56:8085
 var NOT_TESTING = false;
