@@ -11,7 +11,7 @@ await register(await connect());
 const { ChatServerMessage, ChatClientMessage, ClientResponseMessage, ClientInfoMessage, ClientUserInitResponseMessage, ClientConfInitResponseMessage, EmptyMessage } = require('./proto/proto_pb.js');
 const { SoundServiceClient } = require('./proto/proto_grpc_web_pb.js');
 
-var client = new SoundServiceClient('http://178.154.202.56:8085');
+var client = new SoundServiceClient('https://diyumaconference.ru/'); //https://diyumaconference.ru/   http://178.154.202.56:8085
 var NOT_TESTING = false;
 var DEEBUGGING_SET_CONF_ID_FIXED = true
 
@@ -264,14 +264,14 @@ function getBitRateInd(bitRate) {
 
 async function sendSound(request) {
     client.sendSound(request, {"Access-Control-Allow-Origin": "*"}, (error, response) => {
+        if (error) {
+            console.error("Error:", error);
+            return;
+        }
         mySound.set(response.getSoundid(), request.getDataList());
 
         nextRecorderBitRate = response.getRate();
         nextBitRateInd = getBitRateInd(nextRecorderBitRate);
-        
-        if (error) {
-            console.error("Error:", error);
-        }
     });
 }
 
@@ -293,13 +293,13 @@ async function sendAudioBlobDataToServer(blob, bitRate) {
             request.setConfid(confId);
             request.setTimestamp(Date.now());
             request.setMessageind(dataId);
+            console.log("send", dataId);
 
-            //for (let j = 0; j < 100; j++) { // remove it !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             sendSound(request);
-            //}
         }
 
-        sendRequest(TO_SEND.slice(i - step, i), SendMessageIndex);
+        console.log("func", SendMessageIndex);
+        sendRequest(TO_SEND.slice(i - step, i), (i / step) - 1); // CHANGE TODO!!!!!!! (i / step) - 1 -> iSendMessageIndex
         SendMessageIndex += 1;
         lastRightIndex = i;
     }
@@ -308,23 +308,22 @@ async function sendAudioBlobDataToServer(blob, bitRate) {
 
 async function initNewClient(confId) {
     client.initUser(new EmptyMessage(), {"Access-Control-Allow-Origin": "*"}, (error, response) => {
-        userId = response.getUserid();
-
         if (error) {
             console.error("Error:", error);
             return
         }
+        userId = response.getUserid();
         getSound(confId, userId)
     });
 }
 
 async function initNewConf() {
     client.initConf(new EmptyMessage(), {"Access-Control-Allow-Origin": "*"}, (error, response) => {
-        confId = response.getConfid();
-
         if (error) {
             console.error("Error:", error);
+            return;
         }
+        confId = response.getConfid();
     });
 }
 

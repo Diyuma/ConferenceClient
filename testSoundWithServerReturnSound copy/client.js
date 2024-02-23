@@ -1,7 +1,7 @@
 const protoLoader = require("@grpc/proto-loader");
 const grpc = require("grpc-web");
 const { Buffer } = require('buffer');
-var Deque = require("collections/deque");
+var Deque = require("collections/deque.js");
 
 import { MediaRecorder, register } from 'extendable-media-recorder';
 import { connect } from 'extendable-media-recorder-wav-encoder';
