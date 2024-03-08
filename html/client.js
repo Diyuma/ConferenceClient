@@ -11,9 +11,11 @@ await register(await connect());
 const { ChatServerMessage, ChatClientMessage, ClientResponseMessage, ClientInfoMessage, ClientUserInitResponseMessage, ClientConfInitResponseMessage, EmptyMessage } = require('../proto/proto_pb.js');
 const { SoundServiceClient } = require('../proto/proto_grpc_web_pb.js');
 
-var client = new SoundServiceClient('https://diyumaconference.ru/'); //https://diyumaconference.ru/   http://178.154.202.56:8085
-var NOT_TESTING = false;
-var DEEBUGGING_SET_CONF_ID_FIXED = true
+const NOT_TESTING = false;
+const DEEBUGGING_SET_CONF_ID_FIXED = false;
+const TO_RECORD = false;
+
+var client = new SoundServiceClient('https://diyumaconference.ru/'); // https://diyumaconference.ru/   http://178.154.202.56:8085
 
 // SOUND PLAYER FUNCS
 var audioDeque = new Deque(); // each element is [data, bitRate, soundId] (soundId to understand if it client sound or someone else)
@@ -27,10 +29,6 @@ const player = new Gapless5({ guiId: 'gapless5-player-id', loadLimit: 500, exclu
 
 
 
-
-
-
-let TO_RECORD = false;
 
 function saveFloat32ArrayAsText(float32Array, filename) {
     const textArray = Array.from(float32Array, value => value.toString());
@@ -46,7 +44,7 @@ function saveFloat32ArrayAsText(float32Array, filename) {
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
-  }
+}
 
 
 
@@ -56,21 +54,22 @@ function initSoundPlayer() {
     let readyAmt = 0;
     let LastBufferIndex = 0;
     let lastWaveValues = [];
-    let soundLen = 20; // in seconds
+    let soundLen = 5; // in seconds
     let safeLen = 1;
     let lastsr = -100;
 
     //let audioCtxs = [[], []];
-    let buffers = [null, null, null, null, null];
+    let buffers = [null, null, null, null, null, null, null, null, null, null];
     let nowPlayingInd = 0;
     let nowWritingInd = 0;
 
     let audioCtxs = [new AudioContext(), new AudioContext()];
     let sources = [audioCtxs[0].createBufferSource(), audioCtxs[1].createBufferSource()];
-    let playingRates = [4096 * 2, 4096 * 2, 4096 * 2, 4096 * 2, 4096 * 2];
+    let playingRates = [nextRecorderBitRate, nextRecorderBitRate, nextRecorderBitRate, nextRecorderBitRate, nextRecorderBitRate, nextRecorderBitRate, nextRecorderBitRate, nextRecorderBitRate, nextRecorderBitRate, nextRecorderBitRate];
+
     sources[0].connect(audioCtxs[0].destination);
 
-    buffers[0] = prepareSoundPlayer(4096 * 2);
+    buffers[0] = prepareSoundPlayer(nextRecorderBitRate);
 
     sources[0].buffer = buffers[0];
 
@@ -88,36 +87,58 @@ function initSoundPlayer() {
         return buffer;
     }
 
-    async function startPlayingAndPrepareNext(nextPlayingInd) {
-        sources[nextPlayingInd^1].start();
+    async function startPlayingAndPrepareNext(nextPlayingInd) { // какой-то мега баг - playing ind то ли по модулю 2 то ли 10 (len(buffers))
+        sources[(nextPlayingInd + 1) % 2].start();
         audioCtxs[nextPlayingInd] = new AudioContext();
         sources[nextPlayingInd] = audioCtxs[nextPlayingInd].createBufferSource();
-        setTimeout(() => startPlayingAndPrepareNext(nextPlayingInd^1), soundLen * 1000);
+        
+        let toSleep = 1;
+        if (nowPlayingInd )
+        setTimeout(() => startPlayingAndPrepareNext((nextPlayingInd + 1) % 2), (soundLen + toSleep) * 1000);
 
         sources[nextPlayingInd].connect(audioCtxs[nextPlayingInd].destination);
         nowPlayingInd = (nowPlayingInd + 1) % buffers.length;
         if (buffers[nowPlayingInd] == null) {
-            buffers[nowPlayingInd] = prepareSoundPlayer(4096 * 2);
+            buffers[nowPlayingInd] = prepareSoundPlayer(nextRecorderBitRate);
         }
         sources[nextPlayingInd].buffer = buffers[nowPlayingInd];
 
-        buffers[(nowPlayingInd - 2 + buffers.length) % buffers.length] = null;
-    } 
+        buffers[(nowPlayingInd - 3 + buffers.length) % buffers.length] = null;
+    }
+
+    function getSoundIndInCurBR(ind, frBR, toBR) {
+        if (frBR >= toBR) {
+            return ind * frBR / toBR;
+        }
+        let k = toBR / frBR;
+        return (ind - (ind % k)) / k;
+    }
 
     async function waitForAudio() { // we do not need such timeouts, later may make them larger
     
         if (audioDeque.length != 0) {
+            console.log("****************", nowPlayingInd, nowWritingInd);
             let toAdd = audioDeque.shift();
-            let bitRateInd = getBitRateInd(toAdd[1]);
+            let toAddBR = toAdd[1];
+            let bitRateInd = getBitRateInd(toAddBR);
 
             const nowBuffering = buffers[nowWritingInd].getChannelData(0);
+            let toAddLength = toAdd[0].length;
+            if (playingRates[nowWritingInd] > toAddBR) {
+                toAddLength *= playingRates[nowWritingInd] / toAddBR;
+            } else if (playingRates[nowWritingInd] < toAddBR) {
+                toAddLength /= toAddBR / playingRates[nowWritingInd];
+            }
+
             if (mySound.has(toAdd[2]) && NOT_TESTING) {
                 let toDecrim = mySound.get(toAdd[2]);
-                for (let i = 0; i < toAdd[0].length; i++) {
-                    nowBuffering[i + LastBufferIndex] = toAdd[0][i] - toDecrim[i];
+                let toDecrimBR = mySoundBR.get(toAdd[2]);
+
+                for (let i = 0; i < toAddLength; i++) {
+                    nowBuffering[i + LastBufferIndex] = toAdd[0][getSoundIndInCurBR(i, toAddBR, playingRates[nowWritingInd])] - toDecrim[getSoundIndInCurBR(i, toDecrimBR, playingRates[nowWritingInd])];
                 }
             } else {
-                if (lastsr != -100) {
+                /*if (lastsr != -100) {
                     for (let i = 0; i < 100; i++) {
                         //nowBuffering[i + LastBufferIndex] = (lastsr * (100 - i) / 100.0 + toAdd[0][i] * (i + 1) / 100);
                         nowBuffering[i + LastBufferIndex] = (lastsr * (100 - i) / 100.0 + toAdd[0][i])  / 2.0;
@@ -130,15 +151,19 @@ function initSoundPlayer() {
                     for (let i = 0; i < toAdd[0].length; i++) {
                         nowBuffering[i + LastBufferIndex] = toAdd[0][i];
                     }
+                }*/ // TODO return later - makes sound better connect
+                for (let i = 0; i < toAddLength; i++) {
+                    nowBuffering[i + LastBufferIndex] = toAdd[0][getSoundIndInCurBR(i, toAddBR, playingRates[nowWritingInd])];
                 }
+                
 
-                lastsr = 0;
+                /*lastsr = 0;
                 for (let i = 0; i < 100; i++) {
                     lastsr += (toAdd[0][toAdd[0].length - 1 - i] * (100 - i) / 100.0) / 100.0;
-                }
+                }*/  // TODO return later - makes sound better connect
             }
     
-            LastBufferIndex += toAdd[0].length;
+            LastBufferIndex += toAddLength;
             if (LastBufferIndex >= soundLen * playingRates[nowWritingInd]) {
                 if (TO_RECORD) {
                     console.log("Care, only recording to file");
@@ -148,8 +173,9 @@ function initSoundPlayer() {
                 LastBufferIndex = 0;
                 nowWritingInd = (nowWritingInd + 1) % buffers.length;
                 if (buffers[nowWritingInd] == null) {
-                    buffers[nowWritingInd] = prepareSoundPlayer(4096 * 2);
+                    buffers[nowWritingInd] = prepareSoundPlayer(nextRecorderBitRate); // TODO it's good idea to just use same bitrate as recorder, isn't it?
                 }
+                playingRates[nowWritingInd] = nextRecorderBitRate;
             }
     
             readyAmt += 1;
@@ -232,12 +258,17 @@ function initSoundPlayer() {
 // CLIENT-SERVER FUNCS
 var userId = null, confId = null;
 let mySound = new Map();
+let mySoundBR = new Map();
 
 async function serverBytesWavDataToWaveArray(serverData, bitRate) {
     let blobData =  new Blob(serverData, { type: "audio/wav" });
     let arrayBuf = await blobData.arrayBuffer();
     let audioCtx = new AudioContext({sampleRate: bitRate});
     let decodedData = await audioCtx.decodeAudioData(arrayBuf);
+    /*if (decodedData == null) { do not need it - may delete and todo too
+        console.log("Warn: recorder broken data"); // TODO check why it get null there
+        return null;
+    }*/
 
     return decodedData.getChannelData(0); 
 }
@@ -250,6 +281,7 @@ async function getSound(confId, userId) {
     var stream = client.getSound(msg, {"Access-Control-Allow-Origin": "*"});
     stream.on('data', function(response) {
         //(response.getDataList(), response.getRate(), response.getSoundid());
+        console.log(response);
         audioDeque.push([response.getDataList(), response.getRate(), response.getSoundid()]);
     });
 }
@@ -269,6 +301,7 @@ async function sendSound(request) {
             return;
         }
         mySound.set(response.getSoundid(), request.getDataList());
+        mySoundBR.set(response.getSoundid(), request.getRate());
 
         nextRecorderBitRate = response.getRate();
         nextBitRateInd = getBitRateInd(nextRecorderBitRate);
@@ -280,6 +313,10 @@ let GRAIN_SERVER_DURATION = 256; // TODO GET THAT PARAM FROM SERVER!!!!!!!!!!! /
 let SendMessageIndex = 0;
 
 async function sendAudioBlobDataToServer(blob, bitRate) {
+    /*let wavArr = await serverBytesWavDataToWaveArray(blob, bitRate);
+    if (wavArr != null) {
+        TO_SEND.push(...(wavArr));
+    }*/ //  do not need it - may delete
     TO_SEND.push(...(await serverBytesWavDataToWaveArray(blob, bitRate)));
 
     let step = (GRAIN_SERVER_DURATION * bitRate) / 1024; // / 1024 because sd in ms but we don't really need seconds
@@ -324,6 +361,7 @@ async function initNewConf() {
             return;
         }
         confId = response.getConfid();
+        createClient();
     });
 }
 
@@ -434,18 +472,54 @@ function initRecorder() {
     });
 }
 
-$("#StartConferenceButton").click(() => {
-    initNewConf();
-});
+// TODO literally I don't want to change it, but it's not good idea
+function changeConnectionToConferenceElems(ConferenceId) {
+    var b1 = document.getElementById('StartConferenceButton');
+    b1.style.visibility = "hidden";
 
-$("#ConnectToConferenceButton").click(() => {
+    var b2 = document.getElementById('ConnectToConferenceButton');
+    b2.style.visibility = "hidden";
+
+    var l = document.getElementById('ConnectToConferenceFormLabel');
+    l.style.visibility = "hidden";
+
+    var t = document.getElementById('ConferenceText');
+    t.style.visibility = "hidden";
+
+    var f = document.getElementById('ConferenceId');
+    f.style.visibility = "hidden";
+
+    var pl = document.getElementById('startRecording');
+    pl.removeAttribute("hidden");
+
+    var st = document.getElementById('stopRecording');
+    st.removeAttribute("hidden");
+
+    const confIdText = document.createTextNode("Your conference id is:" + ConferenceId.toString());
+    document.body.appendChild(confIdText);
+}
+
+function createClient() {
     if (DEEBUGGING_SET_CONF_ID_FIXED) {
         if (confId == 0) {
             console.log("Conference id is 0 now");
         }
         initNewClient(confId);
     } else {
-        initNewClient(document.getElementById("ConferenceId").value);
+        if (confId == null) {
+            confId = document.getElementById("ConferenceId").value;
+        }
+        initNewClient(confId);
     }
+    
+    changeConnectionToConferenceElems(confId);
     initSoundPlayer();
+}
+
+$("#StartConferenceButton").click(() => {
+    initNewConf();
+});
+
+$("#ConnectToConferenceButton").click(() => {
+    createClient();
 });

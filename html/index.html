@@ -4,43 +4,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Audio Streaming Example</title>
+  <title> Diyuma conference </title>
   <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-  <!--<script src="@grpc/grpc-js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/grpc-web/1.2.1/grpc-web.js"></script>
-  <script src="https://cdn.rawgit.com/grpc/grpc-web/v1.0.7/javascript/net/grpc-web/dist/grpc-web.js"></script>-->
 
-  <button id="startRecording">Start</button>
-  <button id="stopRecording">Stop</button>
+  <button hidden id="startRecording">Start</button>
+  <button hidden id="stopRecording">Stop</button>
 </head>
 <body>
 
-<h1>Audio Streaming Example</h1>
-
-<audio muted id="audioPlayer1" controls></audio>
-<audio muted id="audioPlayer2" controls></audio>
-<audio muted id="audioPlayer3" controls></audio>
-<div id="gapless5-player-id">
+<h1 id="ConferenceText"> Diyuma conference </h1>
 
 <button id="ConnectToConferenceButton">Connect to conference</button>
-<label for="ConferenceId">Conference id connect to</label>
+<label id="ConnectToConferenceFormLabel" for="ConferenceId">Conference id connect to</label>
 <input type="number" id="ConferenceId" name="ConferenceId"/>
 
 <button id="StartConferenceButton">Start new conference</button>
 
-<div id="audioContainer"></div>
-
-<script type = "text/javascript" src="./dist/main.js"></script> <!--./front_files/main.js-->
-<!--<script type = "text/javascript" src="https://cdn.jsdelivr.net/gh/Diyuma/ConferenceClient@latest/testSoundWithServerPlaySoundInHtml/dist/main.js"></script>-->
-<!--<script type = "text/javascript" src="./dist/main.js"></script>-->
-
+<script type="text/javascript" src="./dist/main.js"></script> <!--./front_files/main.js ?-->
 </body>
-
-
-<form onsubmit="download(this['name'].value, this['text'].value)">
-  <input type="text" name="name" value="test.txt">
-  <textarea name="text"></textarea>
-  <input type="submit" value="Download">
-</form>
 
 </html>
