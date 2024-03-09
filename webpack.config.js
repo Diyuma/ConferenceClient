@@ -3,7 +3,7 @@ const path = require('path');
 module.exports = {
     entry: ['./proto/proto_grpc_web_pb.js', './proto/proto_pb.js'],
     output: {
-    filename: 'main.js',
+    filename: 'main_sound.js',
         path: path.resolve(__dirname, 'html/dist'),
     },
     resolve: {

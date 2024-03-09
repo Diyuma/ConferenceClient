@@ -38,9 +38,9 @@ buildFrontServer:
 	npx webpack ./html/client.js
 
 	scp -i ~/.ssh/yconference html/dist/main.js html/index.html lehatr@178.154.202.56:~
-	ssh -i ~/.ssh/yconference lehatr@178.154.202.56 sudo mv main.js "~/conference/html/conference/dist/main.js"
+	ssh -i ~/.ssh/yconference lehatr@178.154.202.56 sudo mv main_sound.js "~/conference/html/conference/dist/main_sound.js"
 	ssh -i ~/.ssh/yconference lehatr@178.154.202.56 sudo mv index.html "~/conference/html/conference/index.html"
-
+# ssh -i ~/.ssh/yconference lehatr@178.154.202.56 sudo mv main_video.js "~/conference/html/conference/dist/main_video.js"
 
 buildAndRunAllSound: buildFront buildProtos startEnvoy startTestGoServer
 

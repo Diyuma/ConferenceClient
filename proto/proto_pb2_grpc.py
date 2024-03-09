@@ -15,22 +15,22 @@ class SoundServiceStub(object):
             channel: A grpc.Channel.
         """
         self.GetSound = channel.unary_stream(
-                '/proto.SoundService/GetSound',
+                '/protoSound.SoundService/GetSound',
                 request_serializer=proto__pb2.ClientInfoMessage.SerializeToString,
                 response_deserializer=proto__pb2.ChatServerMessage.FromString,
                 )
         self.SendSound = channel.unary_unary(
-                '/proto.SoundService/SendSound',
+                '/protoSound.SoundService/SendSound',
                 request_serializer=proto__pb2.ChatClientMessage.SerializeToString,
                 response_deserializer=proto__pb2.ClientResponseMessage.FromString,
                 )
         self.InitUser = channel.unary_unary(
-                '/proto.SoundService/InitUser',
+                '/protoSound.SoundService/InitUser',
                 request_serializer=proto__pb2.EmptyMessage.SerializeToString,
                 response_deserializer=proto__pb2.ClientUserInitResponseMessage.FromString,
                 )
         self.InitConf = channel.unary_unary(
-                '/proto.SoundService/InitConf',
+                '/protoSound.SoundService/InitConf',
                 request_serializer=proto__pb2.EmptyMessage.SerializeToString,
                 response_deserializer=proto__pb2.ClientConfInitResponseMessage.FromString,
                 )
@@ -88,7 +88,7 @@ def add_SoundServiceServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'proto.SoundService', rpc_method_handlers)
+            'protoSound.SoundService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
@@ -107,7 +107,7 @@ class SoundService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/proto.SoundService/GetSound',
+        return grpc.experimental.unary_stream(request, target, '/protoSound.SoundService/GetSound',
             proto__pb2.ClientInfoMessage.SerializeToString,
             proto__pb2.ChatServerMessage.FromString,
             options, channel_credentials,
@@ -124,7 +124,7 @@ class SoundService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/proto.SoundService/SendSound',
+        return grpc.experimental.unary_unary(request, target, '/protoSound.SoundService/SendSound',
             proto__pb2.ChatClientMessage.SerializeToString,
             proto__pb2.ClientResponseMessage.FromString,
             options, channel_credentials,
@@ -141,7 +141,7 @@ class SoundService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/proto.SoundService/InitUser',
+        return grpc.experimental.unary_unary(request, target, '/protoSound.SoundService/InitUser',
             proto__pb2.EmptyMessage.SerializeToString,
             proto__pb2.ClientUserInitResponseMessage.FromString,
             options, channel_credentials,
@@ -158,7 +158,7 @@ class SoundService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/proto.SoundService/InitConf',
+        return grpc.experimental.unary_unary(request, target, '/protoSound.SoundService/InitConf',
             proto__pb2.EmptyMessage.SerializeToString,
             proto__pb2.ClientConfInitResponseMessage.FromString,
             options, channel_credentials,

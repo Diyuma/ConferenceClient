@@ -12,16 +12,24 @@
 </head>
 <body>
 
-<h1 id="ConferenceText"> Diyuma conference </h1>
+  <h1 id="ConferenceText"> Diyuma conference </h1>
 
-<button id="ConnectToConferenceButton">Connect to conference</button>
-<label id="ConnectToConferenceFormLabel" for="ConferenceId">Conference id connect to</label>
-<input type="number" id="ConferenceId" name="ConferenceId"/>
+  <button id="ConnectToConferenceButton">Connect to conference</button>
+  <label id="ConnectToConferenceFormLabel" for="ConferenceId">Conference id connect to</label>
+  <input type="number" id="ConferenceId" name="ConferenceId"/>
 
-<button id="StartConferenceButton">Start new conference</button>
+  <button id="StartConferenceButton">Start new conference</button>
 
-<script type="text/javascript" src="./dist/main.js"></script> <!--./front_files/main.js  ./dist/main.js -->
-<button hidden id="CopyConfIdButton">Copy id</button>
+  <button hidden id="CopyConfIdButton">Copy id</button>
+
+<!-- video part - ->
+  <div class="camera">
+    <video id="video">Video stream not available.</video>
+  </div>
+  <script type = "text/javascript" src="./dist/main_video.js"></script>
+<!- - video part -->
+
+  <script type="text/javascript" src="./dist/main_sound.js"></script>
 </body>
 
 </html>
