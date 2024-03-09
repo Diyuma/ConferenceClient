@@ -127,7 +127,7 @@ function initSoundPlayer() {
 
     function SetDataToBuffer(li, amt, toAdd, toAddBR, buf) {
         if (mySound.has(toAdd[2]) && NOT_TESTING) {
-            let toDecrim = mySound.get();
+            let toDecrim = mySound.get(toAdd[2]);
             let toDecrimBR = mySoundBR.get(toAdd[2]);
 
             for (let i = li; i < li + amt; i++) {
@@ -184,38 +184,6 @@ function initSoundPlayer() {
             } else if (playingRates[nowWritingInd] < toAddBR) {
                 toAddLength /= toAddBR / playingRates[nowWritingInd];
             }
-
-            /*if (mySound.has(toAdd[2]) && NOT_TESTING) {
-                let toDecrim = mySound.get(toAdd[2]);
-                let toDecrimBR = mySoundBR.get(toAdd[2]);
-
-                for (let i = 0; i < toAddLength; i++) {
-                    nowBuffering[i + LastBufferIndex] = toAdd[0][getSoundIndInCurBR(i, toAddBR, playingRates[nowWritingInd])] - toDecrim[getSoundIndInCurBR(i, toDecrimBR, playingRates[nowWritingInd])];
-                }
-            } else {
-                /*if (lastsr != -100) {
-                    for (let i = 0; i < 100; i++) {
-                        //nowBuffering[i + LastBufferIndex] = (lastsr * (100 - i) / 100.0 + toAdd[0][i] * (i + 1) / 100);
-                        nowBuffering[i + LastBufferIndex] = (lastsr * (100 - i) / 100.0 + toAdd[0][i])  / 2.0;
-                    }
-
-                    for (let i = 100; i < toAdd[0].length; i++) {
-                        nowBuffering[i + LastBufferIndex] = toAdd[0][i];
-                    }
-                } else {
-                    for (let i = 0; i < toAdd[0].length; i++) {
-                        nowBuffering[i + LastBufferIndex] = toAdd[0][i];
-                    }
-                }* / // TODO return later - makes sound better connect
-                for (let i = 0; i < toAddLength; i++) {
-                    nowBuffering[i + LastBufferIndex] = toAdd[0][getSoundIndInCurBR(i, toAddBR, playingRates[nowWritingInd])];
-                }*/
-                
-
-                /*lastsr = 0;
-                for (let i = 0; i < 100; i++) {
-                    lastsr += (toAdd[0][toAdd[0].length - 1 - i] * (100 - i) / 100.0) / 100.0;
-                }*/  // TODO return later - makes sound better connect
 
             var lastInd = 0;
             while (lastInd < toAddLength) {
@@ -309,6 +277,10 @@ async function sendSound(request) {
         mySoundBR.set(response.getSoundid(), request.getRate());
 
         nextRecorderBitRate = response.getRate();
+        if (nextRecorderBitRate > maxBitRate) {
+            nextRecorderBitRate = maxBitRate;
+        }
+        console.log(nextRecorderBitRate);
         nextBitRateInd = getBitRateInd(nextRecorderBitRate);
     });
 }
@@ -371,7 +343,8 @@ async function initNewConf() {
 
 
 
-let soundDuration = 500; // 250 - minimum 500 - ok баланс между зарежкой и качеством
+let soundDuration = 512; // 250 - minimum 500 - ok баланс между зарежкой и качеством // should be dividable by GRAIN_SERVER_DURATION as not to mix bitrate int TO_SEND
+                         // so ater sending whole recording is should be empty
 
 //RECORDER FUNCS
 var curRecorderBitRate = 8192;
@@ -444,10 +417,10 @@ function initRecorder() {
 
             setTimeout(() => { runRecorder(chunkInd^1) }, soundDuration); // ms
 
+            recorderState[recorderStateInd^1] = [chunkInd, nextRecorderBitRate];
+
             isRecorderStopped[chunkInd] = false;
             isRecorderStopped[chunkInd^1] = true;
-
-            recorderState[recorderStateInd^1] = [chunkInd, nextRecorderBitRate];
             
             recorders[nextBitRateInd][chunkInd].start();
             recorders[curBitRateInd][chunkInd^1].stop();
