@@ -15,7 +15,7 @@ const NOT_TESTING = false;
 const DEEBUGGING_SET_CONF_ID_FIXED = false;
 const TO_RECORD = false;
 
-var client = new SoundServiceClient('https://diyumaconference.ru/'); // https://diyumaconference.ru/   http://178.154.202.56:8085
+var soundClient = new SoundServiceClient('https://diyumaconference.ru/'); // https://diyumaconference.ru/   http://178.154.202.56:8085
 
 // SOUND PLAYER FUNCS
 var audioDeque = new Deque(); // each element is [data, bitRate, soundId] (soundId to understand if it client sound or someone else)
@@ -252,7 +252,7 @@ async function getSound(confId, userId) {
     msg.setConfid(confId);
     msg.setUserid(userId);
 
-    var stream = client.getSound(msg, {"Access-Control-Allow-Origin": "*"});
+    var stream = soundClient.getSound(msg, {"Access-Control-Allow-Origin": "*"});
     stream.on('data', function(response) {
         //(response.getDataList(), response.getRate(), response.getSoundid());
         audioDeque.push([response.getDataList(), response.getRate(), response.getSoundid()]);
@@ -268,7 +268,7 @@ function getBitRateInd(bitRate) {
 }
 
 async function sendSound(request) {
-    client.sendSound(request, {"Access-Control-Allow-Origin": "*"}, (error, response) => {
+    soundClient.sendSound(request, {"Access-Control-Allow-Origin": "*"}, (error, response) => {
         if (error) {
             console.error("Error:", error);
             return;
@@ -320,7 +320,7 @@ async function sendAudioBlobDataToServer(blob, bitRate) {
 }
 
 async function initNewClient(confId) {
-    client.initUser(new EmptyMessage(), {"Access-Control-Allow-Origin": "*"}, (error, response) => {
+    soundClient.initUser(new EmptyMessage(), {"Access-Control-Allow-Origin": "*"}, (error, response) => {
         if (error) {
             console.error("Error:", error);
             return
@@ -331,13 +331,13 @@ async function initNewClient(confId) {
 }
 
 async function initNewConf() {
-    client.initConf(new EmptyMessage(), {"Access-Control-Allow-Origin": "*"}, (error, response) => {
+    soundClient.initConf(new EmptyMessage(), {"Access-Control-Allow-Origin": "*"}, (error, response) => {
         if (error) {
             console.error("Error:", error);
             return;
         }
         confId = response.getConfid();
-        createClient();
+        createClient(true);
     });
 }
 
@@ -479,7 +479,7 @@ function changeConnectionToConferenceElems(ConferenceId) {
     document.body.appendChild(confIdText);
 }
 
-function createClient() {
+function createClient(isAdmin) {
     if (DEEBUGGING_SET_CONF_ID_FIXED) {
         if (confId == 0) {
             console.log("Conference id is 0 now");
@@ -494,6 +494,10 @@ function createClient() {
     
     changeConnectionToConferenceElems(confId);
     initSoundPlayer();
+
+    RunVideo(confId, userId, isAdmin);
+    StartVideoSending();
+    StartVideoGetting();
 }
 
 $("#StartConferenceButton").click(() => {
@@ -501,7 +505,7 @@ $("#StartConferenceButton").click(() => {
 });
 
 $("#ConnectToConferenceButton").click(() => {
-    createClient();
+    createClient(false);
 });
 
 $("#CopyConfIdButton").click(() => {
