@@ -11,7 +11,7 @@ await register(await connect());
 const { ChatServerMessage, ChatClientMessage, ClientResponseMessage, ClientInfoMessage, ClientUserInitResponseMessage, ClientConfInitResponseMessage, EmptyMessage } = require('../proto/proto_pb.js');
 const { SoundServiceClient } = require('../proto/proto_grpc_web_pb.js');
 
-const NOT_TESTING = false;
+const NOT_TESTING = true;
 const DEEBUGGING_SET_CONF_ID_FIXED = false;
 const TO_RECORD = false;
 
@@ -21,9 +21,9 @@ var soundClient = new SoundServiceClient('https://diyumaconference.ru/'); // htt
 var audioDeque = new Deque(); // each element is [data, bitRate, soundId] (soundId to understand if it client sound or someone else)
 
 // I don't know why, but I need it , it makes sound better without using it:)
-let crossFade = 10;
-const { Gapless5 } = require('@regosen/gapless-5');
-const player = new Gapless5({ guiId: 'gapless5-player-id', loadLimit: 500, exclusive: true, crossfade: crossFade});
+//let crossFade = 10;
+//const { Gapless5 } = require('@regosen/gapless-5');
+//const player = new Gapless5({ guiId: 'gapless5-player-id', loadLimit: 500, exclusive: true, crossfade: crossFade});
 // end of non-understandable part
 
 
@@ -85,13 +85,16 @@ function initSoundPlayer() {
         return buffer;
     }
 
-    function clientIsTooFastPlaying() {
-        if (nextRecorderBitRate > startBitRate) {
+    function clientIsTooFastPlaying(nextPlayingInd) {
+        console.log("Client is too fast playing"); 
+        /*if (nextRecorderBitRate > startBitRate) { dangerous becuase of async
             nextRecorderBitRate /= 2;
             nextBitRateInd -= 1;
-        }
-        nowPlayingInd--;
+        }*/
+        pingServer();
+        nowPlayingInd = nextPlayingInd - 2;
         readyAmt = 0; // to make client wait next x server records
+        SAFE_ZONE_SZ++;
     }
 
     async function startPlayingAndPrepareNext(nextPlayingInd) {
@@ -100,8 +103,7 @@ function initSoundPlayer() {
         let toSleep = 1;
 
         if (nextPlayingInd > nowWritingInd + 1) {
-            clientIsTooFastPlaying();
-            SAFE_ZONE_SZ++;
+            clientIsTooFastPlaying(nextPlayingInd);
             return;
         }
 
@@ -125,8 +127,11 @@ function initSoundPlayer() {
         return (ind - (ind % k)) / k;
     }
 
-    function SetDataToBuffer(li, amt, toAdd, toAddBR, buf) {
+    function SetDataToBuffer(li, amt, toAdd, toAddBR, buf, onlyOne) {
         if (mySound.has(toAdd[2]) && NOT_TESTING) {
+            if (onlyOne) {
+                return;
+            }
             let toDecrim = mySound.get(toAdd[2]);
             let toDecrimBR = mySoundBR.get(toAdd[2]);
 
@@ -161,11 +166,6 @@ function initSoundPlayer() {
     }
 
     function createNewBuffer(ind) {
-        if (TO_RECORD) {
-            console.log("Care, only recording to file");
-            saveFloat32ArrayAsText(nowBuffering, 'data.txt');
-        }
-
         buffers[ind] = prepareSoundPlayer(nextRecorderBitRate); // TODO it's good idea to just use same bitrate as recorder, isn't it?
         playingRates[ind] = nextRecorderBitRate;
     }
@@ -187,12 +187,17 @@ function initSoundPlayer() {
 
             var lastInd = 0;
             while (lastInd < toAddLength) {
-                var amt = Math.min(toAddLength, SOUND_LEN * playingRates[nowWritingInd] - LastBufferIndex - 1);
-                SetDataToBuffer(lastInd, amt, toAdd, toAddBR, nowBuffering);
+                var amt = Math.min(toAddLength, SOUND_LEN * playingRates[nowWritingInd] - LastBufferIndex);
+                SetDataToBuffer(lastInd, amt, toAdd, toAddBR, nowBuffering, !toAdd[4]);
                 lastInd += amt;
                 LastBufferIndex += amt;
 
-                if (LastBufferIndex >= SOUND_LEN * playingRates[nowWritingInd] - 1) {
+                if (LastBufferIndex >= SOUND_LEN * playingRates[nowWritingInd]) {
+                    if (TO_RECORD) {
+                        console.log("Care, only recording to file");
+                        saveFloat32ArrayAsText(nowBuffering, 'data.txt');
+                    }
+                    
                     LastBufferIndex = 0;
                     nowWritingInd += 1;
                     createNewBuffer(nowWritingInd + 1); // create next buffer
@@ -255,8 +260,12 @@ async function getSound(confId, userId) {
     var stream = soundClient.getSound(msg, {"Access-Control-Allow-Origin": "*"});
     stream.on('data', function(response) {
         //(response.getDataList(), response.getRate(), response.getSoundid());
-        audioDeque.push([response.getDataList(), response.getRate(), response.getSoundid()]);
+        audioDeque.push([response.getDataList(), response.getRate(), response.getSoundid(), response.getOnlyone()]);
     });
+
+    /*stream.on('end', function(end) {
+        getSound(confId, userId);
+    });*/
 }
 
 function getBitRateInd(bitRate) {
@@ -277,17 +286,19 @@ async function sendSound(request) {
         mySoundBR.set(response.getSoundid(), request.getRate());
 
         nextRecorderBitRate = response.getRate();
+        //nextRecorderBitRate = 8192; // !!!!!!!!!!!!!!!!!!!!!!!!!!! fixed recorderrate
         if (nextRecorderBitRate > maxBitRate) {
             nextRecorderBitRate = maxBitRate;
         }
-        console.log(nextRecorderBitRate);
+        if (nextRecorderBitRate < startBitRate) {
+            nextRecorderBitRate = startBitRate;
+        }
         nextBitRateInd = getBitRateInd(nextRecorderBitRate);
     });
 }
 
 let TO_SEND = []; // TODO change variable name
 let GRAIN_SERVER_DURATION = 256; // TODO GET THAT PARAM FROM SERVER!!!!!!!!!!! // in ms
-let SEND_STEP_DURATION = 1024;
 let SendMessageIndex = 0;
 
 async function sendAudioBlobDataToServer(blob, bitRate) {
@@ -297,7 +308,7 @@ async function sendAudioBlobDataToServer(blob, bitRate) {
     }*/ //  do not need it - may delete
     TO_SEND.push(...(await serverBytesWavDataToWaveArray(blob, bitRate)));
 
-    let step = (GRAIN_SERVER_DURATION * bitRate) / SEND_STEP_DURATION; // /  SEND_STEP_DURATION because sd in ms but we don't really need seconds
+    let step = (GRAIN_SERVER_DURATION * bitRate) / 1024; // /  1024 because sd in ms but we don't really need seconds
     let lastRightIndex = 0;
     for (let i = step; i <= TO_SEND.length; i += step) {
         async function sendRequest(dataToSend, dataId) {
@@ -319,14 +330,18 @@ async function sendAudioBlobDataToServer(blob, bitRate) {
     TO_SEND = TO_SEND.slice(lastRightIndex, TO_SEND.length);
 }
 
-async function initNewClient(confId) {
+async function initNewClient(confId, isAdmin) {
     soundClient.initUser(new EmptyMessage(), {"Access-Control-Allow-Origin": "*"}, (error, response) => {
         if (error) {
             console.error("Error:", error);
             return
         }
         userId = response.getUserid();
-        getSound(confId, userId)
+        getSound(confId, userId);
+
+        //RunVideo(confId, userId, isAdmin);
+        //StartVideoSending();
+        //StartVideoGetting();
     });
 }
 
@@ -341,9 +356,16 @@ async function initNewConf() {
     });
 }
 
+async function pingServer() {
+    var msg = new ClientInfoMessage();
+    msg.setConfid(confId);
+    msg.setUserid(userId);
+    soundClient.pingServer(msg, {"Access-Control-Allow-Origin": "*"}, (error, response) => {});
+}
 
 
-let soundDuration = 512; // 250 - minimum 500 - ok баланс между зарежкой и качеством // should be dividable by GRAIN_SERVER_DURATION as not to mix bitrate int TO_SEND
+
+let soundDuration = 256; // 250 - minimum 500 - ok баланс между зарежкой и качеством // should be dividable by GRAIN_SERVER_DURATION as not to mix bitrate int TO_SEND
                          // so ater sending whole recording is should be empty
 
 //RECORDER FUNCS
@@ -351,8 +373,8 @@ var curRecorderBitRate = 8192;
 var curBitRateInd = 1;
 var nextRecorderBitRate = 8192;
 var nextBitRateInd = 1;
-var startBitRate = 4096;
-var maxBitRate = 32768;
+var startBitRate = 4096 * 2;
+var maxBitRate = 32768 * 4;
 document.getElementById("startRecording").addEventListener("click", initRecorder);
 function initRecorder() {
     async function getUserMedia(constraints) {
@@ -484,20 +506,16 @@ function createClient(isAdmin) {
         if (confId == 0) {
             console.log("Conference id is 0 now");
         }
-        initNewClient(confId);
+        initNewClient(confId, isAdmin);
     } else {
         if (confId == null) {
             confId = document.getElementById("ConferenceId").value;
         }
-        initNewClient(confId);
+        initNewClient(confId, isAdmin);
     }
     
     changeConnectionToConferenceElems(confId);
     initSoundPlayer();
-
-    RunVideo(confId, userId, isAdmin);
-    StartVideoSending();
-    StartVideoGetting();
 }
 
 $("#StartConferenceButton").click(() => {

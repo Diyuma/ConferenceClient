@@ -210,7 +210,8 @@ proto.protoSound.ChatServerMessage.toObject = function(includeInstance, msg) {
   var f, obj = {
     dataList: (f = jspb.Message.getRepeatedFloatingPointField(msg, 3)) == null ? undefined : f,
     rate: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    soundid: jspb.Message.getFieldWithDefault(msg, 4, 0)
+    soundid: jspb.Message.getFieldWithDefault(msg, 4, 0),
+    onlyone: jspb.Message.getBooleanFieldWithDefault(msg, 5, false)
   };
 
   if (includeInstance) {
@@ -261,6 +262,10 @@ proto.protoSound.ChatServerMessage.deserializeBinaryFromReader = function(msg, r
       var value = /** @type {number} */ (reader.readUint64());
       msg.setSoundid(value);
       break;
+    case 5:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setOnlyone(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -308,6 +313,13 @@ proto.protoSound.ChatServerMessage.serializeBinaryToWriter = function(message, w
   if (f !== 0) {
     writer.writeUint64(
       4,
+      f
+    );
+  }
+  f = message.getOnlyone();
+  if (f) {
+    writer.writeBool(
+      5,
       f
     );
   }
@@ -384,6 +396,24 @@ proto.protoSound.ChatServerMessage.prototype.getSoundid = function() {
  */
 proto.protoSound.ChatServerMessage.prototype.setSoundid = function(value) {
   return jspb.Message.setProto3IntField(this, 4, value);
+};
+
+
+/**
+ * optional bool onlyOne = 5;
+ * @return {boolean}
+ */
+proto.protoSound.ChatServerMessage.prototype.getOnlyone = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 5, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.protoSound.ChatServerMessage} returns this
+ */
+proto.protoSound.ChatServerMessage.prototype.setOnlyone = function(value) {
+  return jspb.Message.setProto3BooleanField(this, 5, value);
 };
 
 
@@ -930,7 +960,7 @@ proto.protoSound.ClientInfoMessage.deserializeBinaryFromReader = function(msg, r
       msg.setConfid(value);
       break;
     case 2:
-      var value = /** @type {number} */ (reader.readUint64());
+      var value = /** @type {number} */ (reader.readUint32());
       msg.setUserid(value);
       break;
     default:
@@ -971,7 +1001,7 @@ proto.protoSound.ClientInfoMessage.serializeBinaryToWriter = function(message, w
   }
   f = message.getUserid();
   if (f !== 0) {
-    writer.writeUint64(
+    writer.writeUint32(
       2,
       f
     );
@@ -998,7 +1028,7 @@ proto.protoSound.ClientInfoMessage.prototype.setConfid = function(value) {
 
 
 /**
- * optional uint64 userId = 2;
+ * optional uint32 userId = 2;
  * @return {number}
  */
 proto.protoSound.ClientInfoMessage.prototype.getUserid = function() {

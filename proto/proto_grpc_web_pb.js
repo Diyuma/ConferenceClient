@@ -194,6 +194,67 @@ proto.protoSound.SoundServicePromiseClient.prototype.sendSound =
 /**
  * @const
  * @type {!grpc.web.MethodDescriptor<
+ *   !proto.protoSound.ClientInfoMessage,
+ *   !proto.protoSound.EmptyMessage>}
+ */
+const methodDescriptor_SoundService_PingServer = new grpc.web.MethodDescriptor(
+  '/protoSound.SoundService/PingServer',
+  grpc.web.MethodType.UNARY,
+  proto.protoSound.ClientInfoMessage,
+  proto.protoSound.EmptyMessage,
+  /**
+   * @param {!proto.protoSound.ClientInfoMessage} request
+   * @return {!Uint8Array}
+   */
+  function(request) {
+    return request.serializeBinary();
+  },
+  proto.protoSound.EmptyMessage.deserializeBinary
+);
+
+
+/**
+ * @param {!proto.protoSound.ClientInfoMessage} request The
+ *     request proto
+ * @param {?Object<string, string>} metadata User defined
+ *     call metadata
+ * @param {function(?grpc.web.RpcError, ?proto.protoSound.EmptyMessage)}
+ *     callback The callback function(error, response)
+ * @return {!grpc.web.ClientReadableStream<!proto.protoSound.EmptyMessage>|undefined}
+ *     The XHR Node Readable Stream
+ */
+proto.protoSound.SoundServiceClient.prototype.pingServer =
+    function(request, metadata, callback) {
+  return this.client_.rpcCall(this.hostname_ +
+      '/protoSound.SoundService/PingServer',
+      request,
+      metadata || {},
+      methodDescriptor_SoundService_PingServer,
+      callback);
+};
+
+
+/**
+ * @param {!proto.protoSound.ClientInfoMessage} request The
+ *     request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!Promise<!proto.protoSound.EmptyMessage>}
+ *     Promise that resolves to the response
+ */
+proto.protoSound.SoundServicePromiseClient.prototype.pingServer =
+    function(request, metadata) {
+  return this.client_.unaryCall(this.hostname_ +
+      '/protoSound.SoundService/PingServer',
+      request,
+      metadata || {},
+      methodDescriptor_SoundService_PingServer);
+};
+
+
+/**
+ * @const
+ * @type {!grpc.web.MethodDescriptor<
  *   !proto.protoSound.EmptyMessage,
  *   !proto.protoSound.ClientUserInitResponseMessage>}
  */
