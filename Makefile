@@ -33,21 +33,15 @@ buildFront:
 	npm install
 	npx webpack ./html/client.js
 
-# !!! npm install
 buildFrontServer:
 	npx webpack ./html/client.js
 
-	scp -i ~/.ssh/yconference html/dist/main_sound.js html/index.html lehatr@178.154.202.56:~
-	ssh -i ~/.ssh/yconference lehatr@178.154.202.56 sudo mv main_sound.js "~/conference/html/conference/dist/main_sound.js"
-	ssh -i ~/.ssh/yconference lehatr@178.154.202.56 sudo mv index.html "~/conference/html/conference/index.html"
-# ssh -i ~/.ssh/yconference lehatr@178.154.202.56 sudo mv main_video.js "~/conference/html/conference/dist/main_video.js"
+	scp -i $$KEY_PATH html/dist/main_sound.js html/index.html $$VM_USER@$$HOST:~
+	ssh -i $$KEY_PATH $$VM_USER@$$HOST sudo mv main_sound.js "~/conference/html/conference/dist/main_sound.js"
+	ssh -i $$KEY_PATH $$VM_USER@$$HOST sudo mv index.html "~/conference/html/conference/index.html"
+# ssh -i $$KEY_PATH lehatr@$$HOST sudo mv main_video.js "~/conference/html/conference/dist/main_video.js"
 
 buildAndRunAllSound: buildFront buildProtos startEnvoy startTestGoServer
 
 connectToServer:
-	ssh -i ~/.ssh/yconference lehatr@178.154.202.56
-
-#ssh -i ~/.ssh/yconference lehatr@178.154.202.56 sudo docker run --name docker-nginx -p 443:443 --network conf_net -d -v /home/lehatr/conference/html:/usr/share/nginx/html \
-				-v /home/lehatr/docker-nginx/nginx.conf:/etc/nginx/conf.d/default.conf nginx
-
-# node client.js
+	ssh -i $$KEY_PATH $$VM_USER@$$HOST
