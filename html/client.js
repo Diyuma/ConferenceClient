@@ -15,7 +15,7 @@ const NOT_TESTING = true;
 const DEEBUGGING_SET_CONF_ID_FIXED = false;
 const TO_RECORD = false;
 
-var soundClient = new SoundServiceClient('https://diyumaconference.ru/'); // https://diyumaconference.ru/   http://178.154.202.56:8085
+var soundClient = new SoundServiceClient('https://diyumaconference.ru/');
 
 // SOUND PLAYER FUNCS
 var audioDeque = new Deque(); // each element is [data, bitRate, soundId] (soundId to understand if it client sound or someone else)
