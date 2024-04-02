@@ -1,3 +1,7 @@
+.ONESHELL:
+.SHELLFLAGS += -e
+include .bashrc
+
 buildProtos: buildGoProto buildJsProto buildPythonProto
 
 buildGoProto:
@@ -13,35 +17,19 @@ buildJsProto:
 	protoc -I=./proto ./proto/proto.proto --js_out=import_style=commonjs:./proto
 	protoc -I=./proto ./proto/proto.proto --grpc-web_out=import_style=commonjs,mode=grpcwebtext:./proto
 
-
-buildTestGoServer:
-	docker build -t lehatr/test_grpc_server .
-	docker tag lehatr/test_grpc_server lehatr/test_grpc_server:version2.0
-	docker push lehatr/test_grpc_server:version2.0
-
-startTestGoServer:
-	docker pull lehatr/test_grpc_server:version2.0
-	docker run --publish 9090:8080 -t lehatr/test_grpc_server:version2.0
-
-startEvans:
-	evans --proto proto/proto.proto --port 8080
-
-runEnvoy:
-	envoy -c envoy-override.yaml
-
 buildFront:
 	npm install
 	npx webpack ./html/client.js
 
-buildFrontServer:
-	npx webpack ./html/client.js
+	rm -rf build_html
+	mkdir -p build_html/conference
 
-	scp -i $$KEY_PATH html/dist/main_sound.js html/index.html $$VM_USER@$$HOST:~
-	ssh -i $$KEY_PATH $$VM_USER@$$HOST sudo mv main_sound.js "~/conference/html/conference/dist/main_sound.js"
-	ssh -i $$KEY_PATH $$VM_USER@$$HOST sudo mv index.html "~/conference/html/conference/index.html"
-# ssh -i $$KEY_PATH lehatr@$$HOST sudo mv main_video.js "~/conference/html/conference/dist/main_video.js"
+	cp -R ./html/dist build_html/conference/
+	cp ./html/index.html build_html/conference/index.html
+	cp -R ./ssl build_html/
 
-buildAndRunAllSound: buildFront buildProtos startEnvoy startTestGoServer
+buildFrontServer: buildFront
+	scp -i ${SSH_KEY_PATH} -r build_html/* ${VM_USER}@${HOST}:~/conferencev2/html
 
 connectToServer:
-	ssh -i $$KEY_PATH $$VM_USER@$$HOST
+	ssh -i ${SSH_KEY_PATH} ${VM_USER}@${HOST}
