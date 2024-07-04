@@ -21,7 +21,7 @@ https://diyumaconference.ru/conference/
 Верхнеуровневая архитектуара нашего сервиса:
 ![telegram-cloud-photo-size-2-5436020973200595247-y](https://github.com/Diyuma/ConferenceClient/assets/36619154/a1d6a170-f08a-42a8-838e-c4cbaa04fc87)
 
-## Как запустить это локально?
+## Как запустить это локально? (outdated) - now just need to run compose and create correct .bashrc - TODO add it
 
 1. Склонируйте все 3 репозитория
 2. В каждом задайте переменные окружения HOST (ip вашей vm), VM_USER (пользователь вашей vm), KEY_PATH (путь к приватному ключу для вашей vm) для удобной работы с вашей vm по ssh
