@@ -15,7 +15,7 @@ const NOT_TESTING = true;
 const DEEBUGGING_SET_CONF_ID_FIXED = false;
 const TO_RECORD = false;
 
-var soundClient = new SoundServiceClient('http://127.0.0.1:443'); // https://diyumaconference.ru/
+var soundClient = new SoundServiceClient('http://127.0.0.1:443'); // http://127.0.0.1:443 https://diyumaconference.ru/
 
 // SOUND PLAYER FUNCS
 var audioDeque = new Deque(); // each element is [data, bitRate, soundId] (soundId to understand if it client sound or someone else)
@@ -259,7 +259,6 @@ async function getSound(confId, userId) {
 
     var stream = soundClient.getSound(msg, {"Access-Control-Allow-Origin": "*"});
     stream.on('data', function(response) {
-        //(response.getDataList(), response.getRate(), response.getSoundid());
         audioDeque.push([response.getDataList(), response.getRate(), response.getSoundid(), response.getOnlyone()]);
     });
 
@@ -501,6 +500,9 @@ function changeConnectionToConferenceElems(ConferenceId) {
     document.body.appendChild(confIdText);
 }
 
+let got_sound_amt = 0; // to rm
+let need_to_get = 1000; // to rm
+
 function createClient(isAdmin) {
     if (DEEBUGGING_SET_CONF_ID_FIXED) {
         if (confId == 0) {
@@ -515,7 +517,43 @@ function createClient(isAdmin) {
     }
     
     changeConnectionToConferenceElems(confId);
-    initSoundPlayer();
+    //initSoundPlayer();
+    let arr = [];
+    for (let i = 0; i < 1000; i++) {
+        arr[i] = i % 128;
+    }
+    async function sendRequest(dataToSend, dataId) {
+        var request = new ChatClientMessage();
+        request.setRate(1024);
+        request.setDataList(dataToSend);
+        request.setUserid(userId);
+        request.setConfid(confId);
+        request.setTimestamp(Date.now());
+        request.setMessageind(dataId);
+
+        sendSound(request);
+    }
+    const socket = new WebSocket("ws://127.0.0.1:443/websocket");
+
+    socket.addEventListener("open", (event) => {
+        console.log("start send", Date.now());
+        // Create WebSocket connection.
+        // Connection opened
+
+        console.log("Message from server ", event.data);
+        socket.addEventListener("message", (event) => {
+            got_sound_amt += 1; // to rm
+            if (got_sound_amt == 1000) {
+                console.log("get all responses", Date.now());
+            }
+        });
+
+        for (let i = 0; i < need_to_get; i++) {
+            socket.send(arr);
+            //sendRequest(arr, 0);
+        }
+        console.log("end send", Date.now());
+    })
 }
 
 $("#StartConferenceButton").click(() => {
