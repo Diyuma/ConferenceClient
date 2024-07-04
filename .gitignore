@@ -1,0 +1,9 @@
+node_modules
+*.zip
+data.txt
+wave_to_wav.py
+envoy-override.yaml
+___envoy-override.yaml
+.bashrc
+build_html/
+ssl/
