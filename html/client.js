@@ -1,6 +1,6 @@
-const protoLoader = require("@grpc/proto-loader");
-const grpc = require("grpc-web");
-const { Buffer } = require('buffer');
+//const protoLoader = require("@grpc/proto-loader");
+//const grpc = require("grpc-web");
+//const { Buffer } = require('buffer');
 var Deque = require("collections/deque.js");
 
 import { MediaRecorder, register } from 'extendable-media-recorder';
@@ -15,7 +15,9 @@ const NOT_TESTING = true;
 const DEEBUGGING_SET_CONF_ID_FIXED = false;
 const TO_RECORD = false;
 
-var soundClient = new SoundServiceClient('http://127.0.0.1:443'); // http://127.0.0.1:443 https://diyumaconference.ru/
+const serverAddr = "127.0.0.1:443";  // http://127.0.0.1:443 https://diyumaconference.ru/
+
+var soundClient = new SoundServiceClient("http://" + serverAddr); // http://127.0.0.1:443 https://diyumaconference.ru/
 
 // SOUND PLAYER FUNCS
 var audioDeque = new Deque(); // each element is [data, bitRate, soundId] (soundId to understand if it client sound or someone else)
@@ -257,14 +259,16 @@ async function getSound(confId, userId) {
     msg.setConfid(confId);
     msg.setUserid(userId);
 
-    var stream = soundClient.getSound(msg, {"Access-Control-Allow-Origin": "*"});
+    /*var stream = soundClient.getSound(msg, {"Access-Control-Allow-Origin": "*"});
     stream.on('data', function(response) {
         audioDeque.push([response.getDataList(), response.getRate(), response.getSoundid(), response.getOnlyone()]);
-    });
+    });*/
 
     /*stream.on('end', function(end) {
         getSound(confId, userId);
     });*/
+
+    SendWebsocket(request, getSoundConn);
 }
 
 function getBitRateInd(bitRate) {
@@ -276,7 +280,7 @@ function getBitRateInd(bitRate) {
 }
 
 async function sendSound(request) {
-    soundClient.sendSound(request, {"Access-Control-Allow-Origin": "*"}, (error, response) => {
+    /*soundClient.sendSound(request, {"Access-Control-Allow-Origin": "*"}, (error, response) => {
         if (error) {
             console.error("Error:", error);
             return;
@@ -293,7 +297,8 @@ async function sendSound(request) {
             nextRecorderBitRate = startBitRate;
         }
         nextBitRateInd = getBitRateInd(nextRecorderBitRate);
-    });
+    });*/
+    SendWebsocket(request, sendSoundConn);
 }
 
 let TO_SEND = []; // TODO change variable name
@@ -350,6 +355,7 @@ async function initNewConf() {
             console.error("Error:", error);
             return;
         }
+
         confId = response.getConfid();
         createClient(true);
     });
@@ -502,6 +508,7 @@ function changeConnectionToConferenceElems(ConferenceId) {
 
 let got_sound_amt = 0; // to rm
 let need_to_get = 1000; // to rm
+var getSoundConn, sendSoundConn;
 
 function createClient(isAdmin) {
     if (DEEBUGGING_SET_CONF_ID_FIXED) {
@@ -517,11 +524,11 @@ function createClient(isAdmin) {
     }
     
     changeConnectionToConferenceElems(confId);
-    //initSoundPlayer();
-    let arr = [];
+    initSoundPlayer();
+    /*let arr = [];
     for (let i = 0; i < 1000; i++) {
         arr[i] = i % 128;
-    }
+    }*/
     async function sendRequest(dataToSend, dataId) {
         var request = new ChatClientMessage();
         request.setRate(1024);
@@ -533,27 +540,87 @@ function createClient(isAdmin) {
 
         sendSound(request);
     }
-    const socket = new WebSocket("ws://127.0.0.1:443/websocket");
 
-    socket.addEventListener("open", (event) => {
-        console.log("start send", Date.now());
-        // Create WebSocket connection.
-        // Connection opened
-
-        console.log("Message from server ", event.data);
-        socket.addEventListener("message", (event) => {
-            got_sound_amt += 1; // to rm
-            if (got_sound_amt == 1000) {
-                console.log("get all responses", Date.now());
-            }
-        });
-
-        for (let i = 0; i < need_to_get; i++) {
-            socket.send(arr);
-            //sendRequest(arr, 0);
+    getSoundConn = NewWebsocketConn("ws://" + serverAddr + "/getsound", ChatServerMessage.deserializeBinary, 
+        function(response) {
+            audioDeque.push([response.getDataList(), response.getRate(), response.getSoundid(), response.getOnlyone()]);
         }
-        console.log("end send", Date.now());
-    })
+    );
+    sendSoundConn = NewWebsocketConn("ws://" + serverAddr + "/sendsound", ClientResponseMessage.deserializeBinary, 
+        function (response) {
+            mySound.set(response.getSoundid(), request.getDataList());
+            mySoundBR.set(response.getSoundid(), request.getRate());
+
+            nextRecorderBitRate = response.getRate();
+            //nextRecorderBitRate = 8192; // !!!!!!!!!!!!!!!!!!!!!!!!!!! fixed recorderrate
+            if (nextRecorderBitRate > maxBitRate) {
+                nextRecorderBitRate = maxBitRate;
+            }
+            if (nextRecorderBitRate < startBitRate) {
+                nextRecorderBitRate = startBitRate;
+            }
+            nextBitRateInd = getBitRateInd(nextRecorderBitRate);
+        }
+    );
+
+    /*function NewWebsocketConn(addr, deserialize_f, messageEvent_f) {
+        console.log("Init websocket connection ", addr);
+        const socket = new WebSocket(addr + "/getsound");
+        socket.binaryType = "arraybuffer";
+
+        socket.addEventListener("open", (event) => {
+            console.log("Openned websocket connection ", addr);
+        })
+        socket.addEventListener("message", (rawData) => {
+            var msg = deserialize_f(new Uint8Array(rawData.data));
+            messageEvent_f(msg);
+        });
+        return socket;
+    }
+
+    function SendWebsocket(msg, socket) {
+        socket.send(msg.serializeBinary());
+    }*/
+
+    /*function InitWebsocketGetConn(addr) {
+        console.log("Init websocket get connection");
+        const socketGetSound = new WebSocket(addr + "/getsound");
+        socketGetSound.binaryType = "arraybuffer";
+
+        socketGetSound.addEventListener("open", (event) => {
+            console.log("Openned getsound websocket connection");
+        })
+        socketGetSound.addEventListener("message", (rawData) => {
+            var msg = ChatServerMessage.deserializeBinary(new Uint8Array(rawData.data));
+            audioDeque.push([msg.getDataList(), response.getRate(), response.getSoundid(), response.getOnlyone()]);
+        });
+        return socketGetSound;
+    }
+
+    function initWebsocketSendConn(addr) {
+        console.log("Init websocket send connection");
+        const socketSendSound = new WebSocket(adde + "/sendsound");
+        socketSendSound.binaryType = "arraybuffer";
+
+        socketSendSound.addEventListener("open", (event) => {
+            console.log("Openned sendsound websocket connection");
+        })
+        socketSendSound.addEventListener("message", (rawData) => {
+            var msg = ClientResponseMessage.deserializeBinary(new Uint8Array(rawData.data));
+        });
+        return socketSendSound;
+    }
+
+    var socketGetSound = InitWebsocketGetConn("ws://127.0.0.1:443");
+    var socketSendSound = initWebsocketSendConn("ws://127.0.0.1:443");
+
+    function GetSoundWebsocket(msg) {
+        socketGetSound.send(msg.serializeBinary());
+    }
+
+    function SendSoundWebsocket(msg) {
+        socketSendSound.send(msg.serializeBinary());
+    }*/
 }
 
 $("#StartConferenceButton").click(() => {
@@ -567,3 +634,36 @@ $("#ConnectToConferenceButton").click(() => {
 $("#CopyConfIdButton").click(() => {
     navigator.clipboard.writeText(confId);
 });
+
+/*
+console.log("start send", Date.now());
+            // Create WebSocket connection.
+            // Connection opened
+
+            console.log("Message from server ", event.data);
+            //console.log(ClientInfoMessage.deserializeBinary(event.data).getConfid());
+            /*var msg = new ClientInfoMessage(); // works correctly
+            msg.setConfid(99);
+            msg.setUserid(123);
+            console.log("#", msg.serializeBinary());
+            console.log("$", ClientInfoMessage.deserializeBinary(msg.serializeBinary()).getConfid());* /
+            var msg = new ClientInfoMessage();
+            msg.setConfid(10);
+            msg.setUserid(25);
+            console.log("#", msg.serializeBinary());
+            socket.addEventListener("message", (event2) => {
+                console.log(new Uint8Array(event2.data))
+                console.log(ClientInfoMessage.deserializeBinary(new Uint8Array(event2.data)).getConfid());
+                got_sound_amt += 1; // to rm
+                if (got_sound_amt == 1000) {
+                    console.log("get all responses", Date.now());
+                }
+            });
+
+            for (let i = 0; i < need_to_get; i++) {
+                socket.send(arr);
+                //sendRequest(arr, 0);
+            }
+            console.log("end send", Date.now());
+        })
+        */

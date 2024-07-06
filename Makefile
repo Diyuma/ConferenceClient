@@ -21,11 +21,12 @@ buildFront:
 	npm install
 	npx webpack ./html/client.js
 
-	rm -rf build_html
+	rm -r build_html
 	mkdir -p build_html/conference
 
 	cp -R ./html/dist build_html/conference/
 	cp ./html/index.html build_html/conference/index.html
+	cp ./html/dto.js build_html/conference/dist/dto.js
 	cp -R ./ssl build_html/
 
 buildFrontServer: buildFront
