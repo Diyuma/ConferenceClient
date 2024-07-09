@@ -1,5 +1,5 @@
 /**
- * @fileoverview gRPC-Web generated client stub for protoSound
+ * @fileoverview gRPC-Web generated client stub for protosound
  * @enhanceable
  * @public
  */
@@ -20,7 +20,7 @@ const grpc = {};
 grpc.web = require('grpc-web');
 
 const proto = {};
-proto.protoSound = require('./proto_pb.js');
+proto.protosound = require('./proto_pb.js');
 
 /**
  * @param {string} hostname
@@ -30,7 +30,7 @@ proto.protoSound = require('./proto_pb.js');
  * @struct
  * @final
  */
-proto.protoSound.SoundServiceClient =
+proto.protosound.SoundServiceClient =
     function(hostname, credentials, options) {
   if (!options) options = {};
   options.format = 'text';
@@ -56,7 +56,7 @@ proto.protoSound.SoundServiceClient =
  * @struct
  * @final
  */
-proto.protoSound.SoundServicePromiseClient =
+proto.protosound.SoundServicePromiseClient =
     function(hostname, credentials, options) {
   if (!options) options = {};
   options.format = 'text';
@@ -77,36 +77,36 @@ proto.protoSound.SoundServicePromiseClient =
 /**
  * @const
  * @type {!grpc.web.MethodDescriptor<
- *   !proto.protoSound.ClientInfoMessage,
- *   !proto.protoSound.ChatServerMessage>}
+ *   !proto.protosound.ClientInfoMessage,
+ *   !proto.protosound.ChatServerMessage>}
  */
 const methodDescriptor_SoundService_GetSound = new grpc.web.MethodDescriptor(
-  '/protoSound.SoundService/GetSound',
+  '/protosound.SoundService/GetSound',
   grpc.web.MethodType.SERVER_STREAMING,
-  proto.protoSound.ClientInfoMessage,
-  proto.protoSound.ChatServerMessage,
+  proto.protosound.ClientInfoMessage,
+  proto.protosound.ChatServerMessage,
   /**
-   * @param {!proto.protoSound.ClientInfoMessage} request
+   * @param {!proto.protosound.ClientInfoMessage} request
    * @return {!Uint8Array}
    */
   function(request) {
     return request.serializeBinary();
   },
-  proto.protoSound.ChatServerMessage.deserializeBinary
+  proto.protosound.ChatServerMessage.deserializeBinary
 );
 
 
 /**
- * @param {!proto.protoSound.ClientInfoMessage} request The request proto
+ * @param {!proto.protosound.ClientInfoMessage} request The request proto
  * @param {?Object<string, string>=} metadata User defined
  *     call metadata
- * @return {!grpc.web.ClientReadableStream<!proto.protoSound.ChatServerMessage>}
+ * @return {!grpc.web.ClientReadableStream<!proto.protosound.ChatServerMessage>}
  *     The XHR Node Readable Stream
  */
-proto.protoSound.SoundServiceClient.prototype.getSound =
+proto.protosound.SoundServiceClient.prototype.getSound =
     function(request, metadata) {
   return this.client_.serverStreaming(this.hostname_ +
-      '/protoSound.SoundService/GetSound',
+      '/protosound.SoundService/GetSound',
       request,
       metadata || {},
       methodDescriptor_SoundService_GetSound);
@@ -114,16 +114,16 @@ proto.protoSound.SoundServiceClient.prototype.getSound =
 
 
 /**
- * @param {!proto.protoSound.ClientInfoMessage} request The request proto
+ * @param {!proto.protosound.ClientInfoMessage} request The request proto
  * @param {?Object<string, string>=} metadata User defined
  *     call metadata
- * @return {!grpc.web.ClientReadableStream<!proto.protoSound.ChatServerMessage>}
+ * @return {!grpc.web.ClientReadableStream<!proto.protosound.ChatServerMessage>}
  *     The XHR Node Readable Stream
  */
-proto.protoSound.SoundServicePromiseClient.prototype.getSound =
+proto.protosound.SoundServicePromiseClient.prototype.getSound =
     function(request, metadata) {
   return this.client_.serverStreaming(this.hostname_ +
-      '/protoSound.SoundService/GetSound',
+      '/protosound.SoundService/GetSound',
       request,
       metadata || {},
       methodDescriptor_SoundService_GetSound);
@@ -133,39 +133,39 @@ proto.protoSound.SoundServicePromiseClient.prototype.getSound =
 /**
  * @const
  * @type {!grpc.web.MethodDescriptor<
- *   !proto.protoSound.ChatClientMessage,
- *   !proto.protoSound.ClientResponseMessage>}
+ *   !proto.protosound.ChatClientMessage,
+ *   !proto.protosound.ClientResponseMessage>}
  */
 const methodDescriptor_SoundService_SendSound = new grpc.web.MethodDescriptor(
-  '/protoSound.SoundService/SendSound',
+  '/protosound.SoundService/SendSound',
   grpc.web.MethodType.UNARY,
-  proto.protoSound.ChatClientMessage,
-  proto.protoSound.ClientResponseMessage,
+  proto.protosound.ChatClientMessage,
+  proto.protosound.ClientResponseMessage,
   /**
-   * @param {!proto.protoSound.ChatClientMessage} request
+   * @param {!proto.protosound.ChatClientMessage} request
    * @return {!Uint8Array}
    */
   function(request) {
     return request.serializeBinary();
   },
-  proto.protoSound.ClientResponseMessage.deserializeBinary
+  proto.protosound.ClientResponseMessage.deserializeBinary
 );
 
 
 /**
- * @param {!proto.protoSound.ChatClientMessage} request The
+ * @param {!proto.protosound.ChatClientMessage} request The
  *     request proto
  * @param {?Object<string, string>} metadata User defined
  *     call metadata
- * @param {function(?grpc.web.RpcError, ?proto.protoSound.ClientResponseMessage)}
+ * @param {function(?grpc.web.RpcError, ?proto.protosound.ClientResponseMessage)}
  *     callback The callback function(error, response)
- * @return {!grpc.web.ClientReadableStream<!proto.protoSound.ClientResponseMessage>|undefined}
+ * @return {!grpc.web.ClientReadableStream<!proto.protosound.ClientResponseMessage>|undefined}
  *     The XHR Node Readable Stream
  */
-proto.protoSound.SoundServiceClient.prototype.sendSound =
+proto.protosound.SoundServiceClient.prototype.sendSound =
     function(request, metadata, callback) {
   return this.client_.rpcCall(this.hostname_ +
-      '/protoSound.SoundService/SendSound',
+      '/protosound.SoundService/SendSound',
       request,
       metadata || {},
       methodDescriptor_SoundService_SendSound,
@@ -174,17 +174,17 @@ proto.protoSound.SoundServiceClient.prototype.sendSound =
 
 
 /**
- * @param {!proto.protoSound.ChatClientMessage} request The
+ * @param {!proto.protosound.ChatClientMessage} request The
  *     request proto
  * @param {?Object<string, string>=} metadata User defined
  *     call metadata
- * @return {!Promise<!proto.protoSound.ClientResponseMessage>}
+ * @return {!Promise<!proto.protosound.ClientResponseMessage>}
  *     Promise that resolves to the response
  */
-proto.protoSound.SoundServicePromiseClient.prototype.sendSound =
+proto.protosound.SoundServicePromiseClient.prototype.sendSound =
     function(request, metadata) {
   return this.client_.unaryCall(this.hostname_ +
-      '/protoSound.SoundService/SendSound',
+      '/protosound.SoundService/SendSound',
       request,
       metadata || {},
       methodDescriptor_SoundService_SendSound);
@@ -194,39 +194,39 @@ proto.protoSound.SoundServicePromiseClient.prototype.sendSound =
 /**
  * @const
  * @type {!grpc.web.MethodDescriptor<
- *   !proto.protoSound.ClientInfoMessage,
- *   !proto.protoSound.EmptyMessage>}
+ *   !proto.protosound.ClientInfoMessage,
+ *   !proto.protosound.EmptyMessage>}
  */
 const methodDescriptor_SoundService_PingServer = new grpc.web.MethodDescriptor(
-  '/protoSound.SoundService/PingServer',
+  '/protosound.SoundService/PingServer',
   grpc.web.MethodType.UNARY,
-  proto.protoSound.ClientInfoMessage,
-  proto.protoSound.EmptyMessage,
+  proto.protosound.ClientInfoMessage,
+  proto.protosound.EmptyMessage,
   /**
-   * @param {!proto.protoSound.ClientInfoMessage} request
+   * @param {!proto.protosound.ClientInfoMessage} request
    * @return {!Uint8Array}
    */
   function(request) {
     return request.serializeBinary();
   },
-  proto.protoSound.EmptyMessage.deserializeBinary
+  proto.protosound.EmptyMessage.deserializeBinary
 );
 
 
 /**
- * @param {!proto.protoSound.ClientInfoMessage} request The
+ * @param {!proto.protosound.ClientInfoMessage} request The
  *     request proto
  * @param {?Object<string, string>} metadata User defined
  *     call metadata
- * @param {function(?grpc.web.RpcError, ?proto.protoSound.EmptyMessage)}
+ * @param {function(?grpc.web.RpcError, ?proto.protosound.EmptyMessage)}
  *     callback The callback function(error, response)
- * @return {!grpc.web.ClientReadableStream<!proto.protoSound.EmptyMessage>|undefined}
+ * @return {!grpc.web.ClientReadableStream<!proto.protosound.EmptyMessage>|undefined}
  *     The XHR Node Readable Stream
  */
-proto.protoSound.SoundServiceClient.prototype.pingServer =
+proto.protosound.SoundServiceClient.prototype.pingServer =
     function(request, metadata, callback) {
   return this.client_.rpcCall(this.hostname_ +
-      '/protoSound.SoundService/PingServer',
+      '/protosound.SoundService/PingServer',
       request,
       metadata || {},
       methodDescriptor_SoundService_PingServer,
@@ -235,17 +235,17 @@ proto.protoSound.SoundServiceClient.prototype.pingServer =
 
 
 /**
- * @param {!proto.protoSound.ClientInfoMessage} request The
+ * @param {!proto.protosound.ClientInfoMessage} request The
  *     request proto
  * @param {?Object<string, string>=} metadata User defined
  *     call metadata
- * @return {!Promise<!proto.protoSound.EmptyMessage>}
+ * @return {!Promise<!proto.protosound.EmptyMessage>}
  *     Promise that resolves to the response
  */
-proto.protoSound.SoundServicePromiseClient.prototype.pingServer =
+proto.protosound.SoundServicePromiseClient.prototype.pingServer =
     function(request, metadata) {
   return this.client_.unaryCall(this.hostname_ +
-      '/protoSound.SoundService/PingServer',
+      '/protosound.SoundService/PingServer',
       request,
       metadata || {},
       methodDescriptor_SoundService_PingServer);
@@ -255,39 +255,39 @@ proto.protoSound.SoundServicePromiseClient.prototype.pingServer =
 /**
  * @const
  * @type {!grpc.web.MethodDescriptor<
- *   !proto.protoSound.EmptyMessage,
- *   !proto.protoSound.ClientUserInitResponseMessage>}
+ *   !proto.protosound.EmptyMessage,
+ *   !proto.protosound.ClientUserInitResponseMessage>}
  */
 const methodDescriptor_SoundService_InitUser = new grpc.web.MethodDescriptor(
-  '/protoSound.SoundService/InitUser',
+  '/protosound.SoundService/InitUser',
   grpc.web.MethodType.UNARY,
-  proto.protoSound.EmptyMessage,
-  proto.protoSound.ClientUserInitResponseMessage,
+  proto.protosound.EmptyMessage,
+  proto.protosound.ClientUserInitResponseMessage,
   /**
-   * @param {!proto.protoSound.EmptyMessage} request
+   * @param {!proto.protosound.EmptyMessage} request
    * @return {!Uint8Array}
    */
   function(request) {
     return request.serializeBinary();
   },
-  proto.protoSound.ClientUserInitResponseMessage.deserializeBinary
+  proto.protosound.ClientUserInitResponseMessage.deserializeBinary
 );
 
 
 /**
- * @param {!proto.protoSound.EmptyMessage} request The
+ * @param {!proto.protosound.EmptyMessage} request The
  *     request proto
  * @param {?Object<string, string>} metadata User defined
  *     call metadata
- * @param {function(?grpc.web.RpcError, ?proto.protoSound.ClientUserInitResponseMessage)}
+ * @param {function(?grpc.web.RpcError, ?proto.protosound.ClientUserInitResponseMessage)}
  *     callback The callback function(error, response)
- * @return {!grpc.web.ClientReadableStream<!proto.protoSound.ClientUserInitResponseMessage>|undefined}
+ * @return {!grpc.web.ClientReadableStream<!proto.protosound.ClientUserInitResponseMessage>|undefined}
  *     The XHR Node Readable Stream
  */
-proto.protoSound.SoundServiceClient.prototype.initUser =
+proto.protosound.SoundServiceClient.prototype.initUser =
     function(request, metadata, callback) {
   return this.client_.rpcCall(this.hostname_ +
-      '/protoSound.SoundService/InitUser',
+      '/protosound.SoundService/InitUser',
       request,
       metadata || {},
       methodDescriptor_SoundService_InitUser,
@@ -296,17 +296,17 @@ proto.protoSound.SoundServiceClient.prototype.initUser =
 
 
 /**
- * @param {!proto.protoSound.EmptyMessage} request The
+ * @param {!proto.protosound.EmptyMessage} request The
  *     request proto
  * @param {?Object<string, string>=} metadata User defined
  *     call metadata
- * @return {!Promise<!proto.protoSound.ClientUserInitResponseMessage>}
+ * @return {!Promise<!proto.protosound.ClientUserInitResponseMessage>}
  *     Promise that resolves to the response
  */
-proto.protoSound.SoundServicePromiseClient.prototype.initUser =
+proto.protosound.SoundServicePromiseClient.prototype.initUser =
     function(request, metadata) {
   return this.client_.unaryCall(this.hostname_ +
-      '/protoSound.SoundService/InitUser',
+      '/protosound.SoundService/InitUser',
       request,
       metadata || {},
       methodDescriptor_SoundService_InitUser);
@@ -316,39 +316,39 @@ proto.protoSound.SoundServicePromiseClient.prototype.initUser =
 /**
  * @const
  * @type {!grpc.web.MethodDescriptor<
- *   !proto.protoSound.EmptyMessage,
- *   !proto.protoSound.ClientConfInitResponseMessage>}
+ *   !proto.protosound.EmptyMessage,
+ *   !proto.protosound.ClientConfInitResponseMessage>}
  */
 const methodDescriptor_SoundService_InitConf = new grpc.web.MethodDescriptor(
-  '/protoSound.SoundService/InitConf',
+  '/protosound.SoundService/InitConf',
   grpc.web.MethodType.UNARY,
-  proto.protoSound.EmptyMessage,
-  proto.protoSound.ClientConfInitResponseMessage,
+  proto.protosound.EmptyMessage,
+  proto.protosound.ClientConfInitResponseMessage,
   /**
-   * @param {!proto.protoSound.EmptyMessage} request
+   * @param {!proto.protosound.EmptyMessage} request
    * @return {!Uint8Array}
    */
   function(request) {
     return request.serializeBinary();
   },
-  proto.protoSound.ClientConfInitResponseMessage.deserializeBinary
+  proto.protosound.ClientConfInitResponseMessage.deserializeBinary
 );
 
 
 /**
- * @param {!proto.protoSound.EmptyMessage} request The
+ * @param {!proto.protosound.EmptyMessage} request The
  *     request proto
  * @param {?Object<string, string>} metadata User defined
  *     call metadata
- * @param {function(?grpc.web.RpcError, ?proto.protoSound.ClientConfInitResponseMessage)}
+ * @param {function(?grpc.web.RpcError, ?proto.protosound.ClientConfInitResponseMessage)}
  *     callback The callback function(error, response)
- * @return {!grpc.web.ClientReadableStream<!proto.protoSound.ClientConfInitResponseMessage>|undefined}
+ * @return {!grpc.web.ClientReadableStream<!proto.protosound.ClientConfInitResponseMessage>|undefined}
  *     The XHR Node Readable Stream
  */
-proto.protoSound.SoundServiceClient.prototype.initConf =
+proto.protosound.SoundServiceClient.prototype.initConf =
     function(request, metadata, callback) {
   return this.client_.rpcCall(this.hostname_ +
-      '/protoSound.SoundService/InitConf',
+      '/protosound.SoundService/InitConf',
       request,
       metadata || {},
       methodDescriptor_SoundService_InitConf,
@@ -357,22 +357,22 @@ proto.protoSound.SoundServiceClient.prototype.initConf =
 
 
 /**
- * @param {!proto.protoSound.EmptyMessage} request The
+ * @param {!proto.protosound.EmptyMessage} request The
  *     request proto
  * @param {?Object<string, string>=} metadata User defined
  *     call metadata
- * @return {!Promise<!proto.protoSound.ClientConfInitResponseMessage>}
+ * @return {!Promise<!proto.protosound.ClientConfInitResponseMessage>}
  *     Promise that resolves to the response
  */
-proto.protoSound.SoundServicePromiseClient.prototype.initConf =
+proto.protosound.SoundServicePromiseClient.prototype.initConf =
     function(request, metadata) {
   return this.client_.unaryCall(this.hostname_ +
-      '/protoSound.SoundService/InitConf',
+      '/protosound.SoundService/InitConf',
       request,
       metadata || {},
       methodDescriptor_SoundService_InitConf);
 };
 
 
-module.exports = proto.protoSound;
+module.exports = proto.protosound;
 

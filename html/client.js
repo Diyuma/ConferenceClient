@@ -1,6 +1,6 @@
-const protoLoader = require("@grpc/proto-loader");
-const grpc = require("grpc-web");
-const { Buffer } = require('buffer');
+//const protoLoader = require("@grpc/proto-loader");
+//const grpc = require("grpc-web");
+//const { Buffer } = require('buffer');
 var Deque = require("collections/deque.js");
 
 import { MediaRecorder, register } from 'extendable-media-recorder';
@@ -11,24 +11,16 @@ await register(await connect());
 const { ChatServerMessage, ChatClientMessage, ClientResponseMessage, ClientInfoMessage, ClientUserInitResponseMessage, ClientConfInitResponseMessage, EmptyMessage } = require('../proto/proto_pb.js');
 const { SoundServiceClient } = require('../proto/proto_grpc_web_pb.js');
 
-const NOT_TESTING = true;
+const NOT_TESTING = false;
 const DEEBUGGING_SET_CONF_ID_FIXED = false;
 const TO_RECORD = false;
 
-var soundClient = new SoundServiceClient('http://127.0.0.1:443'); // https://diyumaconference.ru/
+const serverAddr = "127.0.0.1:443";  // http://127.0.0.1:443 https://diyumaconference.ru/
+
+var soundClient = new SoundServiceClient("http://" + serverAddr); // http://127.0.0.1:443 https://diyumaconference.ru/
 
 // SOUND PLAYER FUNCS
 var audioDeque = new Deque(); // each element is [data, bitRate, soundId] (soundId to understand if it client sound or someone else)
-
-// I don't know why, but I need it , it makes sound better without using it:)
-//let crossFade = 10;
-//const { Gapless5 } = require('@regosen/gapless-5');
-//const player = new Gapless5({ guiId: 'gapless5-player-id', loadLimit: 500, exclusive: true, crossfade: crossFade});
-// end of non-understandable part
-
-
-
-
 
 function saveFloat32ArrayAsText(float32Array, filename) {
     const textArray = Array.from(float32Array, value => value.toString());
@@ -236,6 +228,8 @@ function initSoundPlayer() {
 
 // CLIENT-SERVER FUNCS
 var userId = null, confId = null;
+let preSoundByMsgInd = new Map();
+let preSoundBRByMsgInd  = new Map();
 let mySound = new Map();
 let mySoundBR = new Map();
 
@@ -257,15 +251,16 @@ async function getSound(confId, userId) {
     msg.setConfid(confId);
     msg.setUserid(userId);
 
-    var stream = soundClient.getSound(msg, {"Access-Control-Allow-Origin": "*"});
+    /*var stream = soundClient.getSound(msg, {"Access-Control-Allow-Origin": "*"});
     stream.on('data', function(response) {
-        //(response.getDataList(), response.getRate(), response.getSoundid());
         audioDeque.push([response.getDataList(), response.getRate(), response.getSoundid(), response.getOnlyone()]);
-    });
+    });*/
 
     /*stream.on('end', function(end) {
         getSound(confId, userId);
     });*/
+
+    SendWebsocket(msg, getSoundConn);
 }
 
 function getBitRateInd(bitRate) {
@@ -277,24 +272,9 @@ function getBitRateInd(bitRate) {
 }
 
 async function sendSound(request) {
-    soundClient.sendSound(request, {"Access-Control-Allow-Origin": "*"}, (error, response) => {
-        if (error) {
-            console.error("Error:", error);
-            return;
-        }
-        mySound.set(response.getSoundid(), request.getDataList());
-        mySoundBR.set(response.getSoundid(), request.getRate());
-
-        nextRecorderBitRate = response.getRate();
-        //nextRecorderBitRate = 8192; // !!!!!!!!!!!!!!!!!!!!!!!!!!! fixed recorderrate
-        if (nextRecorderBitRate > maxBitRate) {
-            nextRecorderBitRate = maxBitRate;
-        }
-        if (nextRecorderBitRate < startBitRate) {
-            nextRecorderBitRate = startBitRate;
-        }
-        nextBitRateInd = getBitRateInd(nextRecorderBitRate);
-    });
+    preSoundByMsgInd.set(request.getMessageind(), request.getDataList());
+    preSoundBRByMsgInd.set(request.getMessageind(), request.getRate());
+    SendWebsocket(request, sendSoundConn);
 }
 
 let TO_SEND = []; // TODO change variable name
@@ -351,6 +331,7 @@ async function initNewConf() {
             console.error("Error:", error);
             return;
         }
+
         confId = response.getConfid();
         createClient(true);
     });
@@ -375,8 +356,13 @@ var nextRecorderBitRate = 8192;
 var nextBitRateInd = 1;
 var startBitRate = 4096 * 2;
 var maxBitRate = 32768 * 4;
-document.getElementById("startRecording").addEventListener("click", initRecorder);
-function initRecorder() {
+
+function enableListenningButton() {
+    document.getElementById("startRecording").className = "";
+    document.getElementById("startRecording").addEventListener("click", handleMicrophoneOn); // startUsingMicrophone(true)
+}
+
+function handleMicrophoneOn() {
     async function getUserMedia(constraints) {
         if (window.navigator.mediaDevices) {
             return window.navigator.mediaDevices.getUserMedia(constraints);
@@ -466,7 +452,7 @@ function initRecorder() {
             isRecorderStopped[0] = true;
             isRecorderStopped[1] = true;
             HaveToStop = true;
-            recorder.stop();
+            //recorder.stop();
         }
     });
 }
@@ -501,21 +487,61 @@ function changeConnectionToConferenceElems(ConferenceId) {
     document.body.appendChild(confIdText);
 }
 
+let got_sound_amt = 0; // to rm
+let need_to_get = 1000; // to rm
+var getSoundConn, sendSoundConn;
+
 function createClient(isAdmin) {
     if (DEEBUGGING_SET_CONF_ID_FIXED) {
         if (confId == 0) {
             console.log("Conference id is 0 now");
         }
-        initNewClient(confId, isAdmin);
+        //initNewClient(confId, isAdmin);
     } else {
         if (confId == null) {
             confId = document.getElementById("ConferenceId").value;
         }
-        initNewClient(confId, isAdmin);
+        //initNewClient(confId, isAdmin);
     }
     
     changeConnectionToConferenceElems(confId);
-    initSoundPlayer();
+    async function sendRequest(dataToSend, dataId) {
+        var request = new ChatClientMessage();
+        request.setRate(1024);
+        request.setDataList(dataToSend);
+        request.setUserid(userId);
+        request.setConfid(confId);
+        request.setTimestamp(Date.now());
+        request.setMessageind(dataId);
+
+        sendSound(request);
+    }
+
+    function initNewClientWrap() {
+        initNewClient(confId, isAdmin);
+    }
+
+    getSoundConn = NewWebsocketConn("ws://" + serverAddr + "/getsound",  [initSoundPlayer, initNewClientWrap], ChatServerMessage.deserializeBinary, 
+        function(response) {
+            audioDeque.push([response.getDataList(), response.getRate(), response.getSoundid(), response.getOnlyone()]);
+        }
+    );
+    sendSoundConn = NewWebsocketConn("ws://" + serverAddr + "/sendsound", [enableListenningButton], ClientResponseMessage.deserializeBinary, 
+        function (response) {
+            mySound.set(response.getSoundid(), preSoundByMsgInd.get(response.getMessageind())); // may broke if stop and run  micro too fast but not really fatal error
+            mySoundBR.set(response.getSoundid(), preSoundBRByMsgInd.get(response.getMessageind()));
+
+            nextRecorderBitRate = response.getRate();
+            //nextRecorderBitRate = 8192; // !!!!!!!!!!!!!!!!!!!!!!!!!!! fixed recorderrate
+            if (nextRecorderBitRate > maxBitRate) {
+                nextRecorderBitRate = maxBitRate;
+            }
+            if (nextRecorderBitRate < startBitRate) {
+                nextRecorderBitRate = startBitRate;
+            }
+            nextBitRateInd = getBitRateInd(nextRecorderBitRate);
+        }
+    );
 }
 
 $("#StartConferenceButton").click(() => {
