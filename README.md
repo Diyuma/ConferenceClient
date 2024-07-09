@@ -19,7 +19,8 @@ https://diyumaconference.ru/conference/
 ## Архитектура
 
 Верхнеуровневая архитектуара нашего сервиса:
-![telegram-cloud-photo-size-2-5436020973200595247-y](https://github.com/Diyuma/ConferenceClient/assets/36619154/a1d6a170-f08a-42a8-838e-c4cbaa04fc87)
+![Untitled - Frame 1 (3)](https://github.com/Diyuma/ConferenceClient/assets/36619154/e67f8395-8a92-4b23-b357-95c31476435b)
+
 
 ## Как запустить это локально? (outdated) - now just need to run compose and create correct .bashrc - TODO add it
 
