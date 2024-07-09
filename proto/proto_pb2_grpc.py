@@ -15,22 +15,27 @@ class SoundServiceStub(object):
             channel: A grpc.Channel.
         """
         self.GetSound = channel.unary_stream(
-                '/protoSound.SoundService/GetSound',
+                '/protosound.SoundService/GetSound',
                 request_serializer=proto__pb2.ClientInfoMessage.SerializeToString,
                 response_deserializer=proto__pb2.ChatServerMessage.FromString,
                 )
         self.SendSound = channel.unary_unary(
-                '/protoSound.SoundService/SendSound',
+                '/protosound.SoundService/SendSound',
                 request_serializer=proto__pb2.ChatClientMessage.SerializeToString,
                 response_deserializer=proto__pb2.ClientResponseMessage.FromString,
                 )
+        self.PingServer = channel.unary_unary(
+                '/protosound.SoundService/PingServer',
+                request_serializer=proto__pb2.ClientInfoMessage.SerializeToString,
+                response_deserializer=proto__pb2.EmptyMessage.FromString,
+                )
         self.InitUser = channel.unary_unary(
-                '/protoSound.SoundService/InitUser',
+                '/protosound.SoundService/InitUser',
                 request_serializer=proto__pb2.EmptyMessage.SerializeToString,
                 response_deserializer=proto__pb2.ClientUserInitResponseMessage.FromString,
                 )
         self.InitConf = channel.unary_unary(
-                '/protoSound.SoundService/InitConf',
+                '/protosound.SoundService/InitConf',
                 request_serializer=proto__pb2.EmptyMessage.SerializeToString,
                 response_deserializer=proto__pb2.ClientConfInitResponseMessage.FromString,
                 )
@@ -46,6 +51,12 @@ class SoundServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def SendSound(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def PingServer(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -76,6 +87,11 @@ def add_SoundServiceServicer_to_server(servicer, server):
                     request_deserializer=proto__pb2.ChatClientMessage.FromString,
                     response_serializer=proto__pb2.ClientResponseMessage.SerializeToString,
             ),
+            'PingServer': grpc.unary_unary_rpc_method_handler(
+                    servicer.PingServer,
+                    request_deserializer=proto__pb2.ClientInfoMessage.FromString,
+                    response_serializer=proto__pb2.EmptyMessage.SerializeToString,
+            ),
             'InitUser': grpc.unary_unary_rpc_method_handler(
                     servicer.InitUser,
                     request_deserializer=proto__pb2.EmptyMessage.FromString,
@@ -88,7 +104,7 @@ def add_SoundServiceServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'protoSound.SoundService', rpc_method_handlers)
+            'protosound.SoundService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
@@ -107,7 +123,7 @@ class SoundService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/protoSound.SoundService/GetSound',
+        return grpc.experimental.unary_stream(request, target, '/protosound.SoundService/GetSound',
             proto__pb2.ClientInfoMessage.SerializeToString,
             proto__pb2.ChatServerMessage.FromString,
             options, channel_credentials,
@@ -124,9 +140,26 @@ class SoundService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/protoSound.SoundService/SendSound',
+        return grpc.experimental.unary_unary(request, target, '/protosound.SoundService/SendSound',
             proto__pb2.ChatClientMessage.SerializeToString,
             proto__pb2.ClientResponseMessage.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def PingServer(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/protosound.SoundService/PingServer',
+            proto__pb2.ClientInfoMessage.SerializeToString,
+            proto__pb2.EmptyMessage.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -141,7 +174,7 @@ class SoundService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/protoSound.SoundService/InitUser',
+        return grpc.experimental.unary_unary(request, target, '/protosound.SoundService/InitUser',
             proto__pb2.EmptyMessage.SerializeToString,
             proto__pb2.ClientUserInitResponseMessage.FromString,
             options, channel_credentials,
@@ -158,7 +191,7 @@ class SoundService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/protoSound.SoundService/InitConf',
+        return grpc.experimental.unary_unary(request, target, '/protosound.SoundService/InitConf',
             proto__pb2.EmptyMessage.SerializeToString,
             proto__pb2.ClientConfInitResponseMessage.FromString,
             options, channel_credentials,

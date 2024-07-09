@@ -6,14 +6,16 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Optional as _Op
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class ChatServerMessage(_message.Message):
-    __slots__ = ("data", "rate", "soundId")
+    __slots__ = ("data", "rate", "soundId", "onlyOne")
     DATA_FIELD_NUMBER: _ClassVar[int]
     RATE_FIELD_NUMBER: _ClassVar[int]
     SOUNDID_FIELD_NUMBER: _ClassVar[int]
+    ONLYONE_FIELD_NUMBER: _ClassVar[int]
     data: _containers.RepeatedScalarFieldContainer[float]
     rate: int
     soundId: int
-    def __init__(self, data: _Optional[_Iterable[float]] = ..., rate: _Optional[int] = ..., soundId: _Optional[int] = ...) -> None: ...
+    onlyOne: bool
+    def __init__(self, data: _Optional[_Iterable[float]] = ..., rate: _Optional[int] = ..., soundId: _Optional[int] = ..., onlyOne: bool = ...) -> None: ...
 
 class ChatClientMessage(_message.Message):
     __slots__ = ("data", "rate", "userId", "confId", "timeStamp", "messageInd")
@@ -32,12 +34,14 @@ class ChatClientMessage(_message.Message):
     def __init__(self, data: _Optional[_Iterable[float]] = ..., rate: _Optional[int] = ..., userId: _Optional[int] = ..., confId: _Optional[int] = ..., timeStamp: _Optional[int] = ..., messageInd: _Optional[int] = ...) -> None: ...
 
 class ClientResponseMessage(_message.Message):
-    __slots__ = ("rate", "soundId")
+    __slots__ = ("rate", "soundId", "messageInd")
     RATE_FIELD_NUMBER: _ClassVar[int]
     SOUNDID_FIELD_NUMBER: _ClassVar[int]
+    MESSAGEIND_FIELD_NUMBER: _ClassVar[int]
     rate: int
     soundId: int
-    def __init__(self, rate: _Optional[int] = ..., soundId: _Optional[int] = ...) -> None: ...
+    messageInd: int
+    def __init__(self, rate: _Optional[int] = ..., soundId: _Optional[int] = ..., messageInd: _Optional[int] = ...) -> None: ...
 
 class ClientInfoMessage(_message.Message):
     __slots__ = ("confId", "userId")

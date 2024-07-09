@@ -11,7 +11,7 @@ await register(await connect());
 const { ChatServerMessage, ChatClientMessage, ClientResponseMessage, ClientInfoMessage, ClientUserInitResponseMessage, ClientConfInitResponseMessage, EmptyMessage } = require('../proto/proto_pb.js');
 const { SoundServiceClient } = require('../proto/proto_grpc_web_pb.js');
 
-const NOT_TESTING = true;
+const NOT_TESTING = false;
 const DEEBUGGING_SET_CONF_ID_FIXED = false;
 const TO_RECORD = false;
 
@@ -21,16 +21,6 @@ var soundClient = new SoundServiceClient("http://" + serverAddr); // http://127.
 
 // SOUND PLAYER FUNCS
 var audioDeque = new Deque(); // each element is [data, bitRate, soundId] (soundId to understand if it client sound or someone else)
-
-// I don't know why, but I need it , it makes sound better without using it:)
-//let crossFade = 10;
-//const { Gapless5 } = require('@regosen/gapless-5');
-//const player = new Gapless5({ guiId: 'gapless5-player-id', loadLimit: 500, exclusive: true, crossfade: crossFade});
-// end of non-understandable part
-
-
-
-
 
 function saveFloat32ArrayAsText(float32Array, filename) {
     const textArray = Array.from(float32Array, value => value.toString());
@@ -238,6 +228,8 @@ function initSoundPlayer() {
 
 // CLIENT-SERVER FUNCS
 var userId = null, confId = null;
+let preSoundByMsgInd = new Map();
+let preSoundBRByMsgInd  = new Map();
 let mySound = new Map();
 let mySoundBR = new Map();
 
@@ -268,7 +260,7 @@ async function getSound(confId, userId) {
         getSound(confId, userId);
     });*/
 
-    SendWebsocket(request, getSoundConn);
+    SendWebsocket(msg, getSoundConn);
 }
 
 function getBitRateInd(bitRate) {
@@ -280,24 +272,8 @@ function getBitRateInd(bitRate) {
 }
 
 async function sendSound(request) {
-    /*soundClient.sendSound(request, {"Access-Control-Allow-Origin": "*"}, (error, response) => {
-        if (error) {
-            console.error("Error:", error);
-            return;
-        }
-        mySound.set(response.getSoundid(), request.getDataList());
-        mySoundBR.set(response.getSoundid(), request.getRate());
-
-        nextRecorderBitRate = response.getRate();
-        //nextRecorderBitRate = 8192; // !!!!!!!!!!!!!!!!!!!!!!!!!!! fixed recorderrate
-        if (nextRecorderBitRate > maxBitRate) {
-            nextRecorderBitRate = maxBitRate;
-        }
-        if (nextRecorderBitRate < startBitRate) {
-            nextRecorderBitRate = startBitRate;
-        }
-        nextBitRateInd = getBitRateInd(nextRecorderBitRate);
-    });*/
+    preSoundByMsgInd.set(request.getMessageind(), request.getDataList());
+    preSoundBRByMsgInd.set(request.getMessageind(), request.getRate());
     SendWebsocket(request, sendSoundConn);
 }
 
@@ -380,8 +356,13 @@ var nextRecorderBitRate = 8192;
 var nextBitRateInd = 1;
 var startBitRate = 4096 * 2;
 var maxBitRate = 32768 * 4;
-document.getElementById("startRecording").addEventListener("click", initRecorder);
-function initRecorder() {
+
+function enableListenningButton() {
+    document.getElementById("startRecording").className = "";
+    document.getElementById("startRecording").addEventListener("click", handleMicrophoneOn); // startUsingMicrophone(true)
+}
+
+function handleMicrophoneOn() {
     async function getUserMedia(constraints) {
         if (window.navigator.mediaDevices) {
             return window.navigator.mediaDevices.getUserMedia(constraints);
@@ -471,7 +452,7 @@ function initRecorder() {
             isRecorderStopped[0] = true;
             isRecorderStopped[1] = true;
             HaveToStop = true;
-            recorder.stop();
+            //recorder.stop();
         }
     });
 }
@@ -515,20 +496,15 @@ function createClient(isAdmin) {
         if (confId == 0) {
             console.log("Conference id is 0 now");
         }
-        initNewClient(confId, isAdmin);
+        //initNewClient(confId, isAdmin);
     } else {
         if (confId == null) {
             confId = document.getElementById("ConferenceId").value;
         }
-        initNewClient(confId, isAdmin);
+        //initNewClient(confId, isAdmin);
     }
     
     changeConnectionToConferenceElems(confId);
-    initSoundPlayer();
-    /*let arr = [];
-    for (let i = 0; i < 1000; i++) {
-        arr[i] = i % 128;
-    }*/
     async function sendRequest(dataToSend, dataId) {
         var request = new ChatClientMessage();
         request.setRate(1024);
@@ -541,15 +517,19 @@ function createClient(isAdmin) {
         sendSound(request);
     }
 
-    getSoundConn = NewWebsocketConn("ws://" + serverAddr + "/getsound", ChatServerMessage.deserializeBinary, 
+    function initNewClientWrap() {
+        initNewClient(confId, isAdmin);
+    }
+
+    getSoundConn = NewWebsocketConn("ws://" + serverAddr + "/getsound",  [initSoundPlayer, initNewClientWrap], ChatServerMessage.deserializeBinary, 
         function(response) {
             audioDeque.push([response.getDataList(), response.getRate(), response.getSoundid(), response.getOnlyone()]);
         }
     );
-    sendSoundConn = NewWebsocketConn("ws://" + serverAddr + "/sendsound", ClientResponseMessage.deserializeBinary, 
+    sendSoundConn = NewWebsocketConn("ws://" + serverAddr + "/sendsound", [enableListenningButton], ClientResponseMessage.deserializeBinary, 
         function (response) {
-            mySound.set(response.getSoundid(), request.getDataList());
-            mySoundBR.set(response.getSoundid(), request.getRate());
+            mySound.set(response.getSoundid(), preSoundByMsgInd.get(response.getMessageind())); // may broke if stop and run  micro too fast but not really fatal error
+            mySoundBR.set(response.getSoundid(), preSoundBRByMsgInd.get(response.getMessageind()));
 
             nextRecorderBitRate = response.getRate();
             //nextRecorderBitRate = 8192; // !!!!!!!!!!!!!!!!!!!!!!!!!!! fixed recorderrate
@@ -562,65 +542,6 @@ function createClient(isAdmin) {
             nextBitRateInd = getBitRateInd(nextRecorderBitRate);
         }
     );
-
-    /*function NewWebsocketConn(addr, deserialize_f, messageEvent_f) {
-        console.log("Init websocket connection ", addr);
-        const socket = new WebSocket(addr + "/getsound");
-        socket.binaryType = "arraybuffer";
-
-        socket.addEventListener("open", (event) => {
-            console.log("Openned websocket connection ", addr);
-        })
-        socket.addEventListener("message", (rawData) => {
-            var msg = deserialize_f(new Uint8Array(rawData.data));
-            messageEvent_f(msg);
-        });
-        return socket;
-    }
-
-    function SendWebsocket(msg, socket) {
-        socket.send(msg.serializeBinary());
-    }*/
-
-    /*function InitWebsocketGetConn(addr) {
-        console.log("Init websocket get connection");
-        const socketGetSound = new WebSocket(addr + "/getsound");
-        socketGetSound.binaryType = "arraybuffer";
-
-        socketGetSound.addEventListener("open", (event) => {
-            console.log("Openned getsound websocket connection");
-        })
-        socketGetSound.addEventListener("message", (rawData) => {
-            var msg = ChatServerMessage.deserializeBinary(new Uint8Array(rawData.data));
-            audioDeque.push([msg.getDataList(), response.getRate(), response.getSoundid(), response.getOnlyone()]);
-        });
-        return socketGetSound;
-    }
-
-    function initWebsocketSendConn(addr) {
-        console.log("Init websocket send connection");
-        const socketSendSound = new WebSocket(adde + "/sendsound");
-        socketSendSound.binaryType = "arraybuffer";
-
-        socketSendSound.addEventListener("open", (event) => {
-            console.log("Openned sendsound websocket connection");
-        })
-        socketSendSound.addEventListener("message", (rawData) => {
-            var msg = ClientResponseMessage.deserializeBinary(new Uint8Array(rawData.data));
-        });
-        return socketSendSound;
-    }
-
-    var socketGetSound = InitWebsocketGetConn("ws://127.0.0.1:443");
-    var socketSendSound = initWebsocketSendConn("ws://127.0.0.1:443");
-
-    function GetSoundWebsocket(msg) {
-        socketGetSound.send(msg.serializeBinary());
-    }
-
-    function SendSoundWebsocket(msg) {
-        socketSendSound.send(msg.serializeBinary());
-    }*/
 }
 
 $("#StartConferenceButton").click(() => {
@@ -634,36 +555,3 @@ $("#ConnectToConferenceButton").click(() => {
 $("#CopyConfIdButton").click(() => {
     navigator.clipboard.writeText(confId);
 });
-
-/*
-console.log("start send", Date.now());
-            // Create WebSocket connection.
-            // Connection opened
-
-            console.log("Message from server ", event.data);
-            //console.log(ClientInfoMessage.deserializeBinary(event.data).getConfid());
-            /*var msg = new ClientInfoMessage(); // works correctly
-            msg.setConfid(99);
-            msg.setUserid(123);
-            console.log("#", msg.serializeBinary());
-            console.log("$", ClientInfoMessage.deserializeBinary(msg.serializeBinary()).getConfid());* /
-            var msg = new ClientInfoMessage();
-            msg.setConfid(10);
-            msg.setUserid(25);
-            console.log("#", msg.serializeBinary());
-            socket.addEventListener("message", (event2) => {
-                console.log(new Uint8Array(event2.data))
-                console.log(ClientInfoMessage.deserializeBinary(new Uint8Array(event2.data)).getConfid());
-                got_sound_amt += 1; // to rm
-                if (got_sound_amt == 1000) {
-                    console.log("get all responses", Date.now());
-                }
-            });
-
-            for (let i = 0; i < need_to_get; i++) {
-                socket.send(arr);
-                //sendRequest(arr, 0);
-            }
-            console.log("end send", Date.now());
-        })
-        */

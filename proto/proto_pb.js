@@ -758,7 +758,8 @@ proto.protosound.ClientResponseMessage.prototype.toObject = function(opt_include
 proto.protosound.ClientResponseMessage.toObject = function(includeInstance, msg) {
   var f, obj = {
     rate: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    soundid: jspb.Message.getFieldWithDefault(msg, 2, 0)
+    soundid: jspb.Message.getFieldWithDefault(msg, 2, 0),
+    messageind: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
   if (includeInstance) {
@@ -803,6 +804,10 @@ proto.protosound.ClientResponseMessage.deserializeBinaryFromReader = function(ms
       var value = /** @type {number} */ (reader.readUint64());
       msg.setSoundid(value);
       break;
+    case 3:
+      var value = /** @type {number} */ (reader.readUint32());
+      msg.setMessageind(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -846,6 +851,13 @@ proto.protosound.ClientResponseMessage.serializeBinaryToWriter = function(messag
       f
     );
   }
+  f = message.getMessageind();
+  if (f !== 0) {
+    writer.writeUint32(
+      3,
+      f
+    );
+  }
 };
 
 
@@ -882,6 +894,24 @@ proto.protosound.ClientResponseMessage.prototype.getSoundid = function() {
  */
 proto.protosound.ClientResponseMessage.prototype.setSoundid = function(value) {
   return jspb.Message.setProto3IntField(this, 2, value);
+};
+
+
+/**
+ * optional uint32 messageInd = 3;
+ * @return {number}
+ */
+proto.protosound.ClientResponseMessage.prototype.getMessageind = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 3, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.protosound.ClientResponseMessage} returns this
+ */
+proto.protosound.ClientResponseMessage.prototype.setMessageind = function(value) {
+  return jspb.Message.setProto3IntField(this, 3, value);
 };
 
 
