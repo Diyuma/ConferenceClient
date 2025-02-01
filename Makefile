@@ -1,7 +1,7 @@
 .ONESHELL:
 .SHELLFLAGS += -e
 include .bashrcDemo
-include .bashrc
+-include .bashrc
 
 buildProtos: buildGoProto buildJsProto buildPythonProto
 
@@ -22,7 +22,7 @@ buildFront:
 	npm install
 	npx webpack ./html/client.js
 
-	rm -r build_html
+	-rm -r build_html
 	mkdir -p build_html/conference
 
 	cp -R ./html/dist build_html/conference/
@@ -35,7 +35,7 @@ buildFrontDemo:
 	npm install
 	npx webpack ./html/client.js
 
-	rm -r build_html
+	-rm -r build_html
 	mkdir -p build_html/conference
 
 	cp -R ./html/dist build_html/conference/
@@ -43,6 +43,7 @@ buildFrontDemo:
 	cp ./html/dto.js build_html/conference/dist/dto.js
 	cp -R ./sslDemo build_html/ssl
 
+# ------- SERVER TARGETS -------
 buildFrontServer: buildFront
 	scp -i ${SSH_KEY_PATH} -r build_html/* ${VM_USER}@${HOST}:~/conferencev2/html
 
