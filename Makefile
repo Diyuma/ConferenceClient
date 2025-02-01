@@ -1,5 +1,6 @@
 .ONESHELL:
 .SHELLFLAGS += -e
+include .bashrcDemo
 include .bashrc
 
 buildProtos: buildGoProto buildJsProto buildPythonProto
@@ -7,7 +8,7 @@ buildProtos: buildGoProto buildJsProto buildPythonProto
 buildGoProto:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
-	export PATH="$PATH:$(go env GOPATH)/bin"
+	export PATH="$(PATH):$(go env GOPATH)/bin"
 	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative ./proto/proto.proto
 
 buildPythonProto:
@@ -28,6 +29,19 @@ buildFront:
 	cp ./html/index.html build_html/conference/index.html
 	cp ./html/dto.js build_html/conference/dist/dto.js
 	cp -R ./ssl build_html/
+
+# The only difference is use of sslDemo
+buildFrontDemo:
+	npm install
+	npx webpack ./html/client.js
+
+	rm -r build_html
+	mkdir -p build_html/conference
+
+	cp -R ./html/dist build_html/conference/
+	cp ./html/index.html build_html/conference/index.html
+	cp ./html/dto.js build_html/conference/dist/dto.js
+	cp -R ./sslDemo build_html/ssl
 
 buildFrontServer: buildFront
 	scp -i ${SSH_KEY_PATH} -r build_html/* ${VM_USER}@${HOST}:~/conferencev2/html
